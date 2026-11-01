@@ -23,6 +23,7 @@ Each spec ends with one commit that includes its code, its tests and the update 
 | 09 | CLI | `specs/09-cli.md` | 05, 08 | Spec 09 tests pass |
 | 10 | Routing eval | `specs/10-routing-eval.md` | 08 | Spec 10 tests pass and one live run is recorded |
 | 11 | Samples and README | `specs/11-samples-readme.md` | 09, 10 | Five transcripts and a complete README |
+| 12 | Local web interface | `specs/12-web-interface.md` | 05, 08, 09 | Spec 12 tests pass and a manual browser pass |
 
 ## Dependency graph
 

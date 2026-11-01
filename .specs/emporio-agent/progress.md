@@ -21,6 +21,7 @@
 | 09-cli | 🟢 Done | 28 tests |
 | 10-routing-eval | 🟢 Done | 20 tests; live runs: claude-haiku-5.5 21/21, qwen3.7-flash 20/21 |
 | 11-samples-readme | 🟢 Done | 21 structure tests; clean-venv install verified |
+| 12-web-interface | 🟡 In progress | |
 
 > Legend: 🔴 not started · 🟡 in progress · 🟢 done · ❌ blocked
 

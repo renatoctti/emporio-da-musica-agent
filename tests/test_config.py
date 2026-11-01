@@ -52,3 +52,9 @@ def test_overrides_are_read():
 def test_invalid_today_raises_config_error(bad):
     with pytest.raises(ConfigError, match="EMPORIO_TODAY"):
         load_settings({"EMPORIO_TODAY": bad})
+
+
+def test_simulated_is_true_only_when_today_is_fixed():
+    assert load_settings({"EMPORIO_TODAY": "2026-03-25"}).simulated is True
+    assert load_settings({}).simulated is False
+    assert load_settings({"EMPORIO_TODAY": ""}).simulated is False

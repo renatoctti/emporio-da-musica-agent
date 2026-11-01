@@ -14,15 +14,13 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-from emporio.agent import Agent, AgentTurn
+from emporio.agent import AgentTurn
 from emporio.config import ConfigError, Settings, load_settings
+from emporio.conversation import start_conversation
 from emporio.data import load_store_data
 from emporio.db import HandoffStore, SessionStore, UnknownSessionError, connect
 from emporio.llm import ChatClient, MissingApiKeyError, OpenAIChatClient
-from emporio.policies import load_policy_sections, policy_index
-from emporio.prompt import build_system_prompt
-from emporio.session import SessionState
-from emporio.tools import ToolContext, Toolset
+from emporio.policies import load_policy_sections
 
 COMMANDS = ("chat", "sessions", "handoffs", "export", "replay", "data-report")
 EXIT_WORDS = frozenset({"sair", "exit", "quit"})
@@ -147,12 +145,10 @@ def _build_reply(
 ) -> Reply:
     data = load_store_data(settings.data_dir)
     policies = load_policy_sections(settings.data_dir / POLICY_FILE)
-    context = ToolContext(data, policies, SessionState(), handoffs, session_id, settings.now)
-    index = policy_index(policies)
-    agent = Agent(client, Toolset(context), lambda: build_system_prompt(settings.now, index))
+    conversation = start_conversation(settings, client, data, policies, handoffs, session_id)
 
     def reply(history: list[dict[str, Any]], text: str) -> AgentTurn:
-        turn = agent.reply(history, text)
+        turn = conversation.reply(history, text)
         if verbose:
             for call in turn.tool_calls:
                 print(

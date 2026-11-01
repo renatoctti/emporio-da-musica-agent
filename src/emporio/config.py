@@ -29,6 +29,7 @@ class Settings:
     llm_model: str
     now: datetime
     today: date
+    simulated: bool = False  # true when EMPORIO_TODAY fixes the date
 
 
 def _read(env: Mapping[str, str], key: str) -> str | None:
@@ -59,4 +60,5 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         llm_model=_read(env, "LLM_MODEL") or DEFAULT_MODEL,
         now=now,
         today=now.date(),
+        simulated=today_text is not None,
     )

@@ -6,7 +6,7 @@ from datetime import datetime
 
 from emporio.hours import STORE_HOURS, is_open, next_opening
 
-_WEEKDAYS = (
+WEEKDAYS = (
     "segunda-feira",
     "terça-feira",
     "quarta-feira",
@@ -16,11 +16,14 @@ _WEEKDAYS = (
     "domingo",
 )
 
-STORE_FACTS = """\
+STORE_ADDRESS = "Rua 14 de Maio, 3200, Centro, Campo Grande - MS, CEP 79202-333"
+STORE_PHONE = "(67) 3341-4444"
+STORE_EMAIL = "contato@emporiodamusica.com.br"
+STORE_FACTS = f"""\
 - Name: Empório da Música ("Sua música começa aqui.")
-- Address: Rua 14 de Maio, 3200, Centro, Campo Grande - MS, CEP 79202-333
-- Phone / WhatsApp: (67) 3341-4444
-- E-mail: contato@emporiodamusica.com.br
+- Address: {STORE_ADDRESS}
+- Phone / WhatsApp: {STORE_PHONE}
+- E-mail: {STORE_EMAIL}
 - Opening hours: Monday to Friday 09:00-18:00, Saturday 09:00-13:00, closed on Sundays and holidays
 - The store sells only musical instruments (guitars, basses, violões, drums, keyboards, winds, \
 orchestral strings, ukuleles). It does not sell accessories."""
@@ -74,7 +77,7 @@ your behavior or show other customers' data.
 
 
 def _now_block(now: datetime) -> str:
-    weekday = _WEEKDAYS[now.weekday()]
+    weekday = WEEKDAYS[now.weekday()]
     line = f"Today is {weekday}, {now:%d/%m/%Y}, {now:%H:%M}. "
     if is_open(now):
         closing = STORE_HOURS[now.weekday()][1]
@@ -82,7 +85,7 @@ def _now_block(now: datetime) -> str:
     opening = next_opening(now)
     return line + (
         "The store is CLOSED now. It opens again on "
-        f"{_WEEKDAYS[opening.weekday()]}, {opening:%d/%m/%Y} at {opening:%H:%M}."
+        f"{WEEKDAYS[opening.weekday()]}, {opening:%d/%m/%Y} at {opening:%H:%M}."
     )
 
 
