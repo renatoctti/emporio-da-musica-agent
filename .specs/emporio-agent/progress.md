@@ -109,6 +109,12 @@
 - 57 new tests (routes, state, the trace of each tool, validation, host and origin checks, a model failure, a real HTTP round trip, and the static files). No test calls a real model.
 - Manual pass in Chrome: 1920 px in the light and the dark theme (system choice and the toggle), a real conversation with an identity check, an order lookup and a handoff, the test-data dialog, the store panel, and a 390 px frame for the phone layout and the drawer. The pass found and fixed four things the tests could not: buttons meant only for narrow screens showed on desktop (a CSS order problem), a doubled focus ring on the message field, icon-only buttons without an accessible name, and header chips that took three rows on a phone.
 - Not verified: Firefox and Safari, a real phone, and automated browser tests (the JavaScript has no unit tests).
+### 2026-11-01: spec 12, visual redesign of the page
+
+- The first look (warm paper, serif headings, colored pill tags, rounded cards with shadows, an icon-only send button) read as machine-made. Three directions were drawn as a Claude Design canvas (A central de atendimento, B store brand, C technical panel) and the author picked A, adding that the drawings looked too close to the current page, so A was applied more decisively than drawn.
+- Only styling and a few markup details changed, no component was removed: neutral white and one accent (the store's navy), system sans only, 1 px borders and small radii, no shadows. Tool kinds are a colored dot beside the name, the avatar is a plain circle, the brand is a wordmark with a line-art note, "Enviar" is a text button, the suggestions are rows instead of cards and the panel is a thin timeline.
+- Contrast was computed for every text pair in both themes: the lowest is 5.04:1 (AA needs 4.5:1).
+- Checked again in Chrome (desktop, both themes, a real conversation) and at 500 px; the screenshots in `docs/` were retaken.
 ---
 
 ## Decisions made during implementation

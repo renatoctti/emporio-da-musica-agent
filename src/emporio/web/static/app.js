@@ -79,7 +79,7 @@
   }
 
   // ---- conversation ----
-  function avatar() { return h("img", { class: "avatar", src: "/static/favicon.svg", alt: "", width: "28", height: "28" }); }
+  function avatar() { return h("div", { class: "avatar", "aria-hidden": "true", text: "M" }); }
 
   function userMessage(text) {
     return h("article", { class: "msg msg-user" }, h("div", { class: "bubble", text: text }));
@@ -273,7 +273,7 @@
     list.replaceChildren();
     info.suggestions.forEach(function (s) {
       list.append(h("li", {}, h("button", { type: "button", class: "suggest k-" + s.kind, onclick: function () { send(s.text); } },
-        h("span", { class: "suggest-topic", text: s.topic }), h("span", { class: "suggest-label", text: s.label }), h("span", { class: "suggest-text", text: s.text }))));
+        h("span", { class: "suggest-dot", "aria-hidden": "true" }), h("span", { class: "suggest-body" }, h("span", { class: "suggest-label", text: s.label }), h("span", { class: "suggest-text", text: s.topic + " · " + s.text })), h("span", { class: "suggest-chevron", "aria-hidden": "true", text: "›" }))));
     });
     var legend = $("#legend");
     legend.replaceChildren();
