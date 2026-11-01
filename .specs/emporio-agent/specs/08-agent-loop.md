@@ -170,8 +170,9 @@ class Agent:
 
 ```python
 class FakeChatClient:
-    def __init__(self, script: list[dict]) -> None: ...   # assistant messages returned in order
-    calls: list[tuple[list[dict], list[dict]]]            # (messages, tools) received
+    def __init__(self, script: list[dict]) -> None: ...  # assistant messages returned in order
+
+    calls: list[tuple[list[dict], list[dict]]]  # (messages, tools) received
 ```
 
 ### Acceptance criterion

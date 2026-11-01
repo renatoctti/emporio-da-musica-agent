@@ -1,6 +1,6 @@
 # Spec 01: Foundation, settings and data
 
-**Status:** 🟡 Draft
+**Status:** 🟢 Implemented
 **Author:** renatoctti
 **Date:** 2026-10-31
 **Scope:** configuration, error helper, CSV loading and cleaning
@@ -46,18 +46,18 @@ once at load time keeps every tool simple and makes the decisions visible and te
 
 | ID | Requirement | Priority | Acceptance criterion |
 |---|---|---|---|
-| 🟡 RF-01 | `load_settings` reads `EMPORIO_DATA_DIR`, `EMPORIO_DB_PATH`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `EMPORIO_TODAY` from a mapping (default: `os.environ` after loading `.env`) | Must | With an empty mapping the defaults are `data/` next to the repo root, `var/emporio.db`, `https://openrouter.ai/api/v1`, no API key, model `anthropic/claude-haiku-5.5`, `today` equal to the system date |
-| 🟡 RF-02 | Empty-string values count as unset | Must | `{"LLM_MODEL": ""}` yields the default model (`.env.example` ships empty values) |
-| 🟡 RF-03 | `EMPORIO_TODAY=YYYY-MM-DD` fixes `today` and sets `now` to that date at 10:00; otherwise `now` is the system clock | Must | `EMPORIO_TODAY=2026-03-25` gives `today == date(2026, 3, 25)` and `now == datetime(2026, 3, 25, 10, 0)` |
-| 🟡 RF-04 | An invalid `EMPORIO_TODAY` raises `ConfigError` naming the variable | Must | `EMPORIO_TODAY=25/03/2026` raises with "EMPORIO_TODAY" in the message |
-| 🟡 RF-05 | `results.error(code, message)` returns `{"error": {"code", "message"}}`; `is_error` detects it | Must | Round trip on both helpers |
-| 🟡 RF-06 | `round_brl` rounds half-up to 2 decimals using decimal arithmetic | Must | `round_brl(0.125) == 0.13`, `round_brl(2.675) == 2.68`, `round_brl(439.2) == 439.2` |
-| 🟡 RF-07 | `load_store_data(data_dir)` reads the six CSVs (`desafio_tecnico_ai_eng - <name>.csv`) as UTF-8 into DataFrames with typed columns (see Contracts) | Must | Row counts 9, 65, 25, 50, 20, 22 for categories, products, promotions, customers, orders, order_items |
-| 🟡 RF-08 | A missing CSV raises `FileNotFoundError` naming the file; invalid `specs` JSON raises `ValueError` naming the product id | Must | Both cases covered with a temporary data dir |
-| 🟡 RF-09 | Each product gets `category_name`, `brand` (first known brand found as a whole word in the name, longest brand first, else `None`) and `specs` as a dict | Must | Every one of the 65 products has a brand; product 120 is `Kala`, product 118 is `Kalani`, product 135 is `Music Man` |
-| 🟡 RF-10 | A description is **unreliable** when it names a known brand different from the product's brand, or when `N cordas` / `N teclas` in the description differs from a numeric `specs.strings` / `specs.keys`. Unreliable descriptions become `None` and `description_reliable` is `False` | Must | The unreliable ids on the real data are exactly {135, 137, 139, 140, 142, 144}; every other product keeps its description |
-| 🟡 RF-11 | Promotions get a boolean `is_active`; customers get `email_norm` (stripped, lower-case) and `phone_digits` (digits only, leading `55` removed); orders get `payment_kind` (`pix`, `debit`, `boleto`, `credit`), `installments` (int or `None`), and `None` for empty `tracking_code`, `estimated_delivery`, `notes` | Must | Order 2 gives `payment_kind == "credit"`, `installments == 6`; order 9 has `tracking_code is None`; customer 1 has `phone_digits == "67998123456"` |
-| 🟡 RF-12 | `StoreData.issues` lists `DataIssue(kind, subject, detail)` for: `description_brand_mismatch`, `description_spec_mismatch`, `order_total_mismatch` (item sum from current product prices differs from `total_brl` by more than R$ 0.01), `status_stock_conflict` (discontinued with stock above zero, or coming_soon product present in orders), `duplicate_email`, `empty_category`, `multiple_promotions` | Must | On the real data: `order_total_mismatch` subjects are exactly orders 3 and 20; `duplicate_email` covers customers 11 and 43; `empty_category` covers categories 6, 7, 8; `status_stock_conflict` includes products 136 and 130 |
+| ✅ RF-01 | `load_settings` reads `EMPORIO_DATA_DIR`, `EMPORIO_DB_PATH`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, `EMPORIO_TODAY` from a mapping (default: `os.environ` after loading `.env`) | Must | With an empty mapping the defaults are `data/` next to the repo root, `var/emporio.db`, `https://openrouter.ai/api/v1`, no API key, model `anthropic/claude-haiku-5.5`, `today` equal to the system date |
+| ✅ RF-02 | Empty-string values count as unset | Must | `{"LLM_MODEL": ""}` yields the default model (`.env.example` ships empty values) |
+| ✅ RF-03 | `EMPORIO_TODAY=YYYY-MM-DD` fixes `today` and sets `now` to that date at 10:00; otherwise `now` is the system clock | Must | `EMPORIO_TODAY=2026-03-25` gives `today == date(2026, 3, 25)` and `now == datetime(2026, 3, 25, 10, 0)` |
+| ✅ RF-04 | An invalid `EMPORIO_TODAY` raises `ConfigError` naming the variable | Must | `EMPORIO_TODAY=25/03/2026` raises with "EMPORIO_TODAY" in the message |
+| ✅ RF-05 | `results.error(code, message)` returns `{"error": {"code", "message"}}`; `is_error` detects it | Must | Round trip on both helpers |
+| ✅ RF-06 | `round_brl` rounds half-up to 2 decimals using decimal arithmetic | Must | `round_brl(0.125) == 0.13`, `round_brl(2.675) == 2.68`, `round_brl(439.2) == 439.2` |
+| ✅ RF-07 | `load_store_data(data_dir)` reads the six CSVs (`desafio_tecnico_ai_eng - <name>.csv`) as UTF-8 into DataFrames with typed columns (see Contracts) | Must | Row counts 9, 65, 25, 50, 20, 22 for categories, products, promotions, customers, orders, order_items |
+| ✅ RF-08 | A missing CSV raises `FileNotFoundError` naming the file; invalid `specs` JSON raises `ValueError` naming the product id | Must | Both cases covered with a temporary data dir |
+| ✅ RF-09 | Each product gets `category_name`, `brand` (first known brand found as a whole word in the name, longest brand first, else `None`) and `specs` as a dict | Must | Every one of the 65 products has a brand; product 120 is `Kala`, product 118 is `Kalani`, product 135 is `Music Man` |
+| ✅ RF-10 | A description is **unreliable** when it names a known brand different from the product's brand, or when `N cordas` / `N teclas` in the description differs from a numeric `specs.strings` / `specs.keys`. Unreliable descriptions become `None` and `description_reliable` is `False` | Must | The unreliable ids on the real data are exactly {135, 137, 139, 140, 142, 144}; every other product keeps its description |
+| ✅ RF-11 | Promotions get a boolean `is_active`; customers get `email_norm` (stripped, lower-case) and `phone_digits` (digits only, leading `55` removed); orders get `payment_kind` (`pix`, `debit`, `boleto`, `credit`), `installments` (int or `None`), and `None` for empty `tracking_code`, `estimated_delivery`, `notes` | Must | Order 2 gives `payment_kind == "credit"`, `installments == 6`; order 9 has `tracking_code is None`; customer 1 has `phone_digits == "67998123456"` |
+| ✅ RF-12 | `StoreData.issues` lists `DataIssue(kind, subject, detail)` for: `description_brand_mismatch`, `description_spec_mismatch`, `order_total_mismatch` (item sum from current product prices differs from `total_brl` by more than R$ 0.01), `status_stock_conflict` (discontinued with stock above zero, or coming_soon product present in orders), `duplicate_email`, `empty_category`, `multiple_promotions` | Must | On the real data: `order_total_mismatch` subjects are exactly orders 3 and 20; `duplicate_email` covers customers 11 and 43; `empty_category` covers categories 6, 7, 8; `status_stock_conflict` includes products 136 and 130 |
 
 ---
 
@@ -141,10 +141,10 @@ Errors: `FileNotFoundError` (missing CSV), `ValueError` (invalid specs JSON). No
 
 | ID | Scenario | Trigger | Expected behavior |
 |---|---|---|---|
-| 🟡 EC-01 | Brand is a prefix of another brand | `Kala` and `Kalani` | Whole-word match; `Kalani KAL-300S` gets `Kalani` |
-| 🟡 EC-02 | Description mentions its own brand | product 131 (Gibson, description names Gibson) | Description kept, no issue |
-| 🟡 EC-03 | `specs.strings` is `nylon` (not numeric) | violões | No numeric comparison, description kept |
-| 🟡 EC-04 | Empty CSV cell in dates and codes | orders 9 to 20 | Value is `None`, never `""` or `NaN` |
+| ✅ EC-01 | Brand is a prefix of another brand | `Kala` and `Kalani` | Whole-word match; `Kalani KAL-300S` gets `Kalani` |
+| ✅ EC-02 | Description mentions its own brand | product 131 (Gibson, description names Gibson) | Description kept, no issue |
+| ✅ EC-03 | `specs.strings` is `nylon` (not numeric) | violões | No numeric comparison, description kept |
+| ✅ EC-04 | Empty CSV cell in dates and codes | orders 9 to 20 | Value is `None`, never `""` or `NaN` |
 
 ---
 
@@ -152,15 +152,15 @@ Errors: `FileNotFoundError` (missing CSV), `ValueError` (invalid specs JSON). No
 
 | # | Target | Scenario | Fixture | Expected result | Test file |
 |---|---|---|---|---|---|
-| 🟡 T-01 | `load_settings` | defaults | `{}` | RF-01 values | `tests/test_config.py` |
-| 🟡 T-02 | `load_settings` | empty strings and fixed today | `{"LLM_MODEL": "", "EMPORIO_TODAY": "2026-03-25"}` | default model, fixed `now` | `tests/test_config.py` |
-| 🟡 T-03 | `load_settings` | invalid date | `{"EMPORIO_TODAY": "x"}` | `ConfigError` mentioning the variable | `tests/test_config.py` |
-| 🟡 T-04 | `round_brl`, `error`, `is_error` | values from RF-05 and RF-06 | n/a | as listed | `tests/test_results.py` |
-| 🟡 T-05 | `load_store_data` | real data counts and typed columns | real `data/` | counts of RF-07 | `tests/test_data.py` |
-| 🟡 T-06 | `load_store_data` | missing file and bad specs | tmp dir copy with one file removed or corrupted | the errors of RF-08 | `tests/test_data.py` |
-| 🟡 T-07 | brands and descriptions | RF-09 and RF-10 on real data | real `data/` | the sets listed | `tests/test_data.py` |
-| 🟡 T-08 | derived columns | RF-11 examples | real `data/` | as listed | `tests/test_data.py` |
-| 🟡 T-09 | `issues` | RF-12 on real data | real `data/` | subjects listed | `tests/test_data.py` |
+| ✅ T-01 | `load_settings` | defaults | `{}` | RF-01 values | `tests/test_config.py` |
+| ✅ T-02 | `load_settings` | empty strings and fixed today | `{"LLM_MODEL": "", "EMPORIO_TODAY": "2026-03-25"}` | default model, fixed `now` | `tests/test_config.py` |
+| ✅ T-03 | `load_settings` | invalid date | `{"EMPORIO_TODAY": "x"}` | `ConfigError` mentioning the variable | `tests/test_config.py` |
+| ✅ T-04 | `round_brl`, `error`, `is_error` | values from RF-05 and RF-06 | n/a | as listed | `tests/test_results.py` |
+| ✅ T-05 | `load_store_data` | real data counts and typed columns | real `data/` | counts of RF-07 | `tests/test_data.py` |
+| ✅ T-06 | `load_store_data` | missing file and bad specs | tmp dir copy with one file removed or corrupted | the errors of RF-08 | `tests/test_data.py` |
+| ✅ T-07 | brands and descriptions | RF-09 and RF-10 on real data | real `data/` | the sets listed | `tests/test_data.py` |
+| ✅ T-08 | derived columns | RF-11 examples | real `data/` | as listed | `tests/test_data.py` |
+| ✅ T-09 | `issues` | RF-12 on real data | real `data/` | subjects listed | `tests/test_data.py` |
 
 ### Acceptance criterion
 
@@ -172,11 +172,11 @@ python -m pytest tests/test_config.py tests/test_results.py tests/test_data.py -
 
 ## Implementation checklist
 
-- [ ] 🟡 `git diff --stat` checked against **Allowed files**
-- [ ] 🟡 Tests written before the code
-- [ ] 🟡 Type hints on every public function; no `Any` except for JSON-like dicts
-- [ ] 🟡 Fail fast: no `except` that swallows errors
-- [ ] 🟡 `ruff check` and `ruff format --check` pass
+- [x] ✅ `git diff --stat` checked against **Allowed files**
+- [x] ✅ Tests written before the code
+- [x] ✅ Type hints on every public function; no `Any` except for JSON-like dicts
+- [x] ✅ Fail fast: no `except` that swallows errors
+- [x] ✅ `ruff check` and `ruff format --check` pass
 
 ## Open questions
 

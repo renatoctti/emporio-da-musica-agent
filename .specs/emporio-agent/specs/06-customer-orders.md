@@ -69,6 +69,7 @@ customer who **owns the order**, never by searching customers by e-mail (assumpt
 ```python
 MAX_FAILED_VERIFICATIONS: int = 3
 
+
 @dataclass
 class SessionState:
     verified_customer_id: int | None = None

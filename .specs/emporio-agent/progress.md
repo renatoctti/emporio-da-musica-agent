@@ -10,7 +10,7 @@
 
 | Spec | Status | Notes |
 |---|---|---|
-| 01-foundation-data | 🔴 Not started | |
+| 01-foundation-data | 🟢 Done | 21 tests, ruff clean |
 | 02-pricing | 🔴 Not started | |
 | 03-catalog | 🔴 Not started | |
 | 04-policy-retrieval | 🔴 Not started | |
@@ -28,7 +28,11 @@
 
 ## Implementation log
 
-(empty)
+### 2026-10-31: spec 01, foundation and data
+
+- Added `config.py` (settings, `ConfigError`), `results.py` (error helper, half-up rounding) and `data.py` (typed tables, cleaning, issue report).
+- 19 new tests; the full suite has 21 passing.
+- The unreliable-description rule found exactly the expected ids {135, 137, 139, 140, 142, 144} on the real data, so no divergence from the spec.
 
 ---
 

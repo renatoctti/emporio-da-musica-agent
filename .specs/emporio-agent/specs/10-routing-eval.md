@@ -102,6 +102,7 @@ class EvalCase:
     reply_must_not_match: tuple[str, ...] = ()
     tags: tuple[str, ...] = ()
 
+
 CASES: tuple[EvalCase, ...]
 ```
 
