@@ -14,7 +14,7 @@
 | 02-pricing | 🟢 Done | 30 tests |
 | 03-catalog | 🟢 Done | 23 tests |
 | 04-policy-retrieval | 🟢 Done | 14 tests |
-| 05-persistence | 🔴 Not started | |
+| 05-persistence | 🟢 Done | 14 tests |
 | 06-customer-orders | 🔴 Not started | |
 | 07-returns-handoff | 🔴 Not started | |
 | 08-agent-loop | 🔴 Not started | |
@@ -52,6 +52,11 @@
 - Heading detection accepts top-level ids only in increasing order, so the numbered list of item 7.2 is not mistaken for sections.
 - `get_policy_sections` expands a top-level id to its subsections and reports unknown ids.
 - Added `pypdf` to the dependencies.
+
+### 2026-10-31: spec 05, persistence
+
+- Added `db.py`: SQLite connection with the schema created on connect, `SessionStore` (messages stored as JSON in OpenAI format) and `HandoffStore` (protocol built from the row id in the same transaction).
+- 14 new tests, including reconnecting to the same file, foreign keys with rollback and ticket protocol numbering.
 
 ---
 
