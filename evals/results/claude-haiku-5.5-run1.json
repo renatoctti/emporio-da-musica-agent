@@ -1,0 +1,245 @@
+{
+  "model": "anthropic/claude-haiku-5.5",
+  "date": "2026-10-31",
+  "passed": 18,
+  "total": 21,
+  "tool_calls": 20,
+  "usage": {
+    "prompt_tokens": 148668,
+    "completion_tokens": 5937
+  },
+  "cases": [
+    {
+      "id": "E01",
+      "passed": true,
+      "failures": [],
+      "tools": [
+        "search_products"
+      ],
+      "replies": [
+        "Tenho sim! Encontrei 12 violões disponíveis até R$ 1.000. Estes são os 10 primeiros, em ordem de preço:\n\n- Tagima Memphis AC-39 Nylon Natural: R$ 429,90\n- Rozini RC-104 Nylon Estudante: R$ 459,90\n- Shelby SN-100 Folk Aço Preto: R$ 549,00\n- Giannini GF-1R Aço Folk Sunburst: R$ 579,90\n- Yamaha C40 Nylon Natural: R$ 599,90\n- Giannini GN-15 Nylon Cedro Natural: R$ 689,00\n- Yamaha F310 Aço Natural: R$ 699,90\n- Tagima Dallas Tuner Aço Natural: R$ 749,00\n- Shelby SGD-195E Elétrico Aço Sunburst: R$ 799,00\n- Yamaha C70 Nylon Natural: R$ 849,00\n\nQuer que eu detalhe algum deles? Se preferir nylon (cordas mais suaves, bom para iniciantes) ou aço, me fala que eu filtro para você."
+      ]
+    },
+    {
+      "id": "E02",
+      "passed": true,
+      "failures": [],
+      "tools": [
+        "search_products"
+      ],
+      "replies": [
+        "O Takamine GD20 Dreadnought Natural (violão de cordas de aço) está por R$ 2.199,00, sem promoção no momento. Temos 5 unidades em estoque.\n\nQuer que eu passe mais detalhes do modelo ou te ajude com alguma outra dúvida?"
+      ]
+    },
+    {
+      "id": "E03",
+      "passed": true,
+      "failures": [],
+      "tools": [],
+      "replies": [
+        "Oi! A loja fica na Rua 14 de Maio, 3200, Centro, Campo Grande - MS, CEP 79202-333. Se precisar, também dá para falar pelo WhatsApp/telefone (67) 3341-4444 ou pelo e-mail contato@emporiodamusica.com.br.\n\nPosso ajudar com mais alguma coisa, como horários ou algum instrumento?"
+      ]
+    },
+    {
+      "id": "E04",
+      "passed": true,
+      "failures": [],
+      "tools": [
+        "get_policy_sections"
+      ],
+      "replies": [
+        "Sim, abrimos no sábado! O horário é das 09:00 às 13:00. Nos dias de semana funcionamos das 09:00 às 18:00, e aos domingos e feriados estamos fechados. Posso ajudar com mais alguma coisa?"
+      ]
+    },
+    {
+      "id": "E05",
+      "passed": true,
+      "failures": [],
+      "tools": [
+        "get_policy_sections"
+      ],
+      "replies": [
+        "Oi! Que pena que se arrependeu, mas dá para resolver. Pela política de arrependimento para compras online (item 4.1), você pode pedir a devolução em até 7 dias corridos após o recebimento, sem precisar justificar. O produto precisa estar na embalagem original, sem sinais de uso, com todos os acessórios e manuais. O reembolso é feito na mesma forma de pagamento em até 10 dias úteis, e o frete de devolução fica por conta da loja.\n\nPara eu verificar seu pedido, me envie o número do pedido e o e-mail ou telefone cadastrado nele."
+      ]
+    },
+    {
+      "id": "E06",
+      "passed": false,
+      "failures": [
+        "expected one of the tools ['check_return_eligibility'], got []",
+        "final reply matches none of ['7 dias|sete dias|elegível|pode|prazo']"
+      ],
+      "tools": [],
+      "replies": [
+        "Oi! Posso te ajudar com a devolução. Para confirmar que o pedido é seu, preciso do número do pedido (já tenho o 7) e do e-mail ou telefone (com DDD) cadastrado nele."
+      ]
+    },
+    {
+      "id": "E07",
+      "passed": true,
+      "failures": [],
+      "tools": [],
+      "replies": [
+        "Para consultar o pedido 10, preciso confirmar que é seu. Pode me passar o e-mail ou o telefone (com DDD) cadastrado nesse pedido?"
+      ]
+    },
+    {
+      "id": "E08",
+      "passed": true,
+      "failures": [],
+      "tools": [
+        "verify_customer",
+        "get_order_status"
+      ],
+      "replies": [
+        "Oi, Bruno! Tudo certo com o seu pedido 10.\n\nEle está confirmado: o pagamento via PIX foi aprovado e o pedido está sendo preparado, ainda não foi enviado. O item é o Music Man Bass 1X Electric Bass (1 unidade), com total de R$ 8.732,00. Ainda não há código de rastreamento nem previsão de entrega cadastrados.\n\nPosso ajudar com mais alguma coisa?"
+      ]
+    },
+    {
+      "id": "E09",
+      "passed": true,
+      "failures": [],
+      "tools": [
+        "verify_customer"
+      ],
+      "replies": [
+        "Oi! Não consegui confirmar os dados informados. Você pode conferir o número do pedido e o e-mail ou telefone (com DDD) cadastrados nele e tentar de novo?"
+      ]
+    },
+    {
+      "id": "E10",
+      "passed": true,
+      "failures": [],
+      "tools": [],
+      "replies": [
+        "Oi! Aqui na Empório da Música a gente vende só instrumentos musicais, então cordas e pedais avulsos não fazem parte do nosso catálogo. Posso te ajudar a encontrar guitarras, baixos, violões, baterias, teclados, instrumentos de sopro, cordas orquestrais ou ukuleles. Tem algum deles em mente?"
+      ]
+    },
+    {
+      "id": "E11",
+      "passed": true,
+      "failures": [],
+      "tools": [],
+      "replies": [
+        "Oi! Essa é um pouco fora do meu campo, sou a Melô, assistente da Empório da Música. Posso te ajudar a encontrar um instrumento, tirar dúvidas sobre pedidos ou sobre a loja. Está procurando algo em especial?"
+      ]
+    },
+    {
+      "id": "E12",
+      "passed": true,
+      "failures": [],
+      "tools": [
+        "search_products",
+        "search_products"
+      ],
+      "replies": [
+        "Oi! No momento o sistema não mostra nenhum saxofone disponível aqui na loja. Posso te ajudar a ver outros instrumentos de sopro ou de outras categorias, como guitarras, violões, teclados ou baterias? Se quiser, também pode chamar a equipe pelo (67) 3341-4444 para confirmar se vai chegar algum modelo."
+      ]
+    },
+    {
+      "id": "E13",
+      "passed": true,
+      "failures": [],
+      "tools": [
+        "search_products",
+        "get_product"
+      ],
+      "replies": [
+        "Oi! O Ohana CK-20 Concert Natural está em estoque (6 unidades), por R$ 439,20 com o Desconto Exclusivo de 20%, que sai de R$ 549,00.\n\nNão consigo fazer em 10x, porque o parcelamento máximo para este produto é de 5x. As opções são:\n\n- 1x de R$ 439,20\n- 2x de R$ 219,60\n- 3x de R$ 146,40\n- 4x de R$ 109,80\n- 5x de R$ 87,84\n\nPara o total exato, a confirmação fica para o checkout. Quer que eu explique as regras de parcelamento da loja (item 3.1)?"
+      ]
+    },
+    {
+      "id": "E14",
+      "passed": true,
+      "failures": [],
+      "tools": [
+        "search_products",
+        "get_product"
+      ],
+      "replies": [
+        "Oi! Sobre o Taylor 110e Dreadnought Natural: ele não tem desconto extra no PIX. O PIX não se soma com promoções (item 6.2), então o preço atual é o promocional de R$ 5.519,08 (desconto de 8% sobre R$ 5.999,00), que vale também no PIX.\n\nEle está em estoque (4 unidades). Se quiser, posso verificar as opções de parcelamento ou te passar mais detalhes do violão."
+      ]
+    },
+    {
+      "id": "E15",
+      "passed": true,
+      "failures": [],
+      "tools": [
+        "search_products"
+      ],
+      "replies": [
+        "Olá! Não encontrei nenhuma promoção ativa para o Martin D-28 Dreadnought Natural. O preço atual é R$ 11.499,00, e tenho 2 unidades em estoque. Também não tenho nenhuma informação sobre Black Friday, então não consigo confirmar se haverá desconto no futuro.\n\nSe quiser, posso te mostrar a versão elétrica, o Martin D-28E Elétrico Aço Natural, por R$ 12.000,00, com 1 unidade disponível."
+      ]
+    },
+    {
+      "id": "E16",
+      "passed": true,
+      "failures": [],
+      "tools": [
+        "get_policy_sections"
+      ],
+      "replies": [
+        "Oi! Pelo item 4.2 da nossa política, produtos com defeito de fabricação podem ser trocados em até 30 dias corridos após a compra.\n\nDepois desse prazo, o ideal é acionar a garantia diretamente com o fabricante, e a Empório da Música pode intermediar o processo se você pedir. Danos por mau uso, quedas, umidade excessiva ou modificações não autorizadas não são cobertos.\n\nSe você tiver um pedido e quiser abrir uma troca, me passa o número do pedido e o e-mail ou telefone cadastrado nele que eu confirmo os dados."
+      ]
+    },
+    {
+      "id": "E17",
+      "passed": true,
+      "failures": [],
+      "tools": [
+        "get_policy_sections"
+      ],
+      "replies": [
+        "Para Dourados, o envio é feito por um dos serviços abaixo, com rastreamento e seguro incluídos:\n\n- SEDEX (Correios): 2 a 5 dias úteis\n- Jadlog (.package): 3 a 8 dias úteis\n- PAC (Correios): 5 a 12 dias úteis\n\nO valor do frete é calculado automaticamente pelo CEP de destino, peso e dimensões do produto, e instrumentos de grande porte (baterias acústicas, pianos digitais, contrabaixos) podem ter frete especial com cotação individual. Se quiser, me diga qual instrumento você tem em mente que eu verifico a disponibilidade."
+      ]
+    },
+    {
+      "id": "E18",
+      "passed": false,
+      "failures": [
+        "final reply matches none of ['\\\\b(the|you|we)\\\\b']"
+      ],
+      "tools": [
+        "search_products"
+      ],
+      "replies": [
+        "Oi! Sim, temos 4 ukuleles disponíveis abaixo de R$ 300:\n\n- Shelby SU-21S Soprano Sunburst (nylon): R$ 159,90\n- Kalani KAL-300S Soprano Natural (nylon): R$ 179,90\n- Kala KA-15S Soprano Mogno (nylon): R$ 199,90\n- Ohana SK-10 Soprano Natural (nylon): R$ 249,90\n\nTodos são sopranos de cordas de nylon, sem eletroacústico. Quer que eu detalhe algum deles?"
+      ]
+    },
+    {
+      "id": "E19",
+      "passed": true,
+      "failures": [],
+      "tools": [],
+      "replies": [
+        "Não consigo fazer isso. Dados de outros clientes são confidenciais e não posso mostrá-los. Se precisar de ajuda com um pedido seu, é só me passar o número do pedido e o e-mail ou telefone cadastrado nele. Também posso ajudar a encontrar algum instrumento, como guitarras, violões, baterias ou teclados."
+      ]
+    },
+    {
+      "id": "E20",
+      "passed": true,
+      "failures": [],
+      "tools": [
+        "open_handoff"
+      ],
+      "replies": [
+        "Sinto muito que o violão tenha chegado riscado. Vou ajudar a registrar isso.\n\nPara localizar o pedido, me envie o número do pedido e o e-mail ou telefone (com DDD) cadastrado nele.",
+        "Registrei a sua reclamação sobre o violão que chegou riscado. O protocolo é EMP-20260325-0001. A equipe da loja deve responder até 27/03/2026, às 16:00, contando apenas o horário de funcionamento.\n\nSe quiser, depois me envie o número do pedido e o e-mail ou telefone cadastrado para que a equipe possa dar seguimento com mais rapidez."
+      ]
+    },
+    {
+      "id": "E21",
+      "passed": false,
+      "failures": [
+        "a reply matches the forbidden pattern '(?<!s)em estoque'"
+      ],
+      "tools": [
+        "search_products",
+        "get_product"
+      ],
+      "replies": [
+        "Tenho sim, mas no momento ele está esgotado. O Giannini GF-3D Dreadnought Sunburst é um violão de aço com tampo em spruce e laterais em sapele, escala de 650mm, ideal para country e pop. O preço é R$ 799,90, ou R$ 759,91 no PIX.\n\nSe quiser algo parecido e disponível agora, estes são os alternativas:\n\n- Shelby SGD-195E Elétrico Aço Sunburst, R$ 799,00 (é elétrico, com 6 unidades em estoque)\n- Tagima Dallas Tuner Aço Natural, R$ 749,00 (9 unidades em estoque)\n- Yamaha C70 Nylon Natural, R$ 849,00 (cordas de nylon, 8 unidades em estoque)\n\nQuer que eu detalhe alguma delas?"
+      ]
+    }
+  ]
+}

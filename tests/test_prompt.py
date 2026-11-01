@@ -13,6 +13,7 @@ SUNDAY = datetime(2026, 3, 29, 15, 0)
 # One marker phrase per rule of the prompt (RF-06).
 RULE_MARKERS = [
     "Reply in the customer's language",
+    "language of their latest message",
     "Never state a price, stock level",
     "get_policy_sections",
     "original price next to a promotional price",

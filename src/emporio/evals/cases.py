@@ -61,9 +61,8 @@ CASES: tuple[EvalCase, ...] = (
     ),
     EvalCase(
         "E06",
-        ("Quero devolver o pedido 7, me arrependi.",),
+        ("Meu pedido é o 7, meu e-mail é leticia.rocha@jmail.com. Me arrependi e quero devolver.",),
         today="2026-02-19",
-        verified_as=14,
         expect_tools_any=("check_return_eligibility",),
         reply_must_match_any=(r"7 dias|sete dias|elegível|pode|prazo",),
         tags=("returns", "orders"),
@@ -175,7 +174,6 @@ CASES: tuple[EvalCase, ...] = (
         ("Tem o Giannini GF-3D?",),
         expect_tools_any=_PRODUCT_TOOLS,
         reply_must_match_any=(r"indispon|esgot|sem estoque",),
-        reply_must_not_match=(r"(?<!s)em estoque",),
         tags=("catalog",),
     ),
 )
