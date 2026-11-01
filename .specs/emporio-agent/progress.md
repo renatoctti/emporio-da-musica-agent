@@ -18,7 +18,7 @@
 | 06-customer-orders | 🟢 Done | 26 tests |
 | 07-returns-handoff | 🟢 Done | 59 tests |
 | 08-agent-loop | 🟢 Done | 51 tests |
-| 09-cli | 🔴 Not started | |
+| 09-cli | 🟢 Done | 28 tests |
 | 10-routing-eval | 🔴 Not started | |
 | 11-samples-readme | 🔴 Not started | |
 
@@ -76,12 +76,23 @@
 - 51 new tests with a scripted fake model; no test calls a real LLM.
 - The model cannot override the session, the data or the clock: injected values win and unexpected arguments are rejected.
 
+### 2026-10-31: spec 09, command-line interface
+
+- Added `cli.py`: `chat` (new or `--resume`), `sessions`, `handoffs`, `export`, `replay` and `data-report`; `emporio` alone starts a chat.
+- The verification state is not restored on resume and the CLI says so; a missing API key exits with code 1 before any session is created.
+- Transcripts show each tool call and a truncated result, so the data lookups are visible in the samples.
+- 28 new tests with injected I/O and a fake model, plus 3 for the persistence extensions.
+
 ---
 
 ## Decisions made during implementation
 
 | Decision | Spec | Rationale |
 |---|---|---|
+| Added `SessionStore.append_messages` (one transaction per turn) and `SessionStore.get_session`; `SessionInfo` gained an optional `reference_date` | 09 | A turn has several messages and a failure halfway would leave a history the API rejects on resume; the export header needs the model and reference date. These three tests in `test_db.py` were written together with the code, not before it. |
+| `main` accepts keyword-only `env`, `client_factory`, `read` and `write` | 09 | Lets the tests run the real command parsing with a fake model and injected I/O. |
+| An invalid `--today` exits with code 2 and `replay` of a missing script exits with code 2 | 09 | Both are user input errors, like an unknown session id. |
+| `__main__.py` switches stdout and stderr to UTF-8 | 09 | The Windows console default code page garbles Portuguese accents. |
 | Corrected the acceptance count of RF-08 from 5 to 6 new messages | 08 | Two tool rounds plus the final answer is user, assistant, tool, assistant, tool, assistant. |
 | The prompt has 13 rules instead of 12 | 08 | Added an explicit rule for out-of-stock, discontinued and coming-soon products (manual item 7.3). |
 | `OpenAIChatClient` keeps a `usage` counter and tool arguments sent as null are treated as omitted | 08 | The eval reports token use; models often send null for optional arguments. |

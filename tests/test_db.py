@@ -176,3 +176,35 @@ def test_list_open_and_find_open(conn):
     assert store.find_open(2, "return_request").id == b.id
     assert store.find_open(2, "complaint") is None
     assert store.find_open(3, "defect") is None
+
+
+def test_append_messages_stores_a_whole_turn_in_order(conn):
+    store = SessionStore(conn)
+    sid = store.create_session("m", None, NOW)
+    turn = [{"role": "user", "content": "oi"}, {"role": "assistant", "content": "olá"}]
+    store.append_messages(sid, turn, NOW)
+    store.append_messages(sid, [{"role": "user", "content": "de novo"}], NOW)
+    assert store.load_messages(sid) == [*turn, {"role": "user", "content": "de novo"}]
+    with pytest.raises(UnknownSessionError):
+        store.append_messages("nope", turn, NOW)
+
+
+def test_append_messages_is_all_or_nothing(conn):
+    store = SessionStore(conn)
+    sid = store.create_session("m", None, NOW)
+    with pytest.raises(TypeError):
+        store.append_messages(sid, [{"role": "user", "content": "ok"}, {"bad": object()}], NOW)
+    assert store.load_messages(sid) == []
+
+
+def test_get_session_returns_the_metadata(conn):
+    store = SessionStore(conn)
+    sid = store.create_session("some/model", date(2026, 3, 25), NOW)
+    store.append_message(sid, {"role": "user", "content": "primeira"}, NOW)
+    info = store.get_session(sid)
+    assert (info.id, info.model, info.reference_date) == (sid, "some/model", date(2026, 3, 25))
+    assert (info.message_count, info.first_user_message, info.created_at) == (1, "primeira", NOW)
+    assert store.get_session(store.create_session("m", None, NOW)).reference_date is None
+    with pytest.raises(UnknownSessionError):
+        store.get_session("nope")
+    assert store.list_sessions()[0].reference_date is None

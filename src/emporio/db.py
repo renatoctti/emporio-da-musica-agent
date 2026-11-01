@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import secrets
 import sqlite3
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
@@ -56,6 +57,7 @@ class SessionInfo:
     model: str
     message_count: int
     first_user_message: str | None
+    reference_date: date | None = None
 
 
 @dataclass(frozen=True)
@@ -84,6 +86,27 @@ def connect(path: Path | str) -> sqlite3.Connection:
     conn.execute("PRAGMA foreign_keys = ON")
     conn.executescript(_SCHEMA)
     return conn
+
+
+_SESSION_QUERY = """
+    SELECT s.id, s.created_at, s.model, s.reference_date,
+           (SELECT COUNT(*) FROM messages m WHERE m.session_id = s.id) AS message_count,
+           (SELECT json_extract(m.message_json, '$.content') FROM messages m
+             WHERE m.session_id = s.id AND json_extract(m.message_json, '$.role') = 'user'
+             ORDER BY m.id LIMIT 1) AS first_user_message
+    FROM sessions s
+"""
+
+
+def _session_info(row: sqlite3.Row) -> SessionInfo:
+    return SessionInfo(
+        id=row["id"],
+        created_at=datetime.fromisoformat(row["created_at"]),
+        model=row["model"],
+        message_count=row["message_count"],
+        first_user_message=row["first_user_message"],
+        reference_date=date.fromisoformat(row["reference_date"]) if row["reference_date"] else None,
+    )
 
 
 class SessionStore:
@@ -117,6 +140,18 @@ class SessionStore:
                 (session_id, _stamp(now), json.dumps(message, ensure_ascii=False)),
             )
 
+    def append_messages(
+        self, session_id: str, messages: Sequence[dict[str, Any]], now: datetime
+    ) -> None:
+        """Store a whole turn in one transaction: every message is saved or none is."""
+        self._require(session_id)
+        rows = [(session_id, _stamp(now), json.dumps(m, ensure_ascii=False)) for m in messages]
+        with self._conn:
+            self._conn.executemany(
+                "INSERT INTO messages (session_id, created_at, message_json) VALUES (?, ?, ?)",
+                rows,
+            )
+
     def load_messages(self, session_id: str) -> list[dict[str, Any]]:
         self._require(session_id)
         rows = self._conn.execute(
@@ -124,30 +159,17 @@ class SessionStore:
         )
         return [json.loads(row["message_json"]) for row in rows]
 
+    def get_session(self, session_id: str) -> SessionInfo:
+        row = self._conn.execute(_SESSION_QUERY + " WHERE s.id = ?", (session_id,)).fetchone()
+        if row is None:
+            raise UnknownSessionError(session_id)
+        return _session_info(row)
+
     def list_sessions(self, limit: int = 20) -> list[SessionInfo]:
         rows = self._conn.execute(
-            """
-            SELECT s.id, s.created_at, s.model,
-                   (SELECT COUNT(*) FROM messages m WHERE m.session_id = s.id) AS message_count,
-                   (SELECT json_extract(m.message_json, '$.content') FROM messages m
-                     WHERE m.session_id = s.id AND json_extract(m.message_json, '$.role') = 'user'
-                     ORDER BY m.id LIMIT 1) AS first_user_message
-            FROM sessions s
-            ORDER BY s.created_at DESC, s.rowid DESC
-            LIMIT ?
-            """,
-            (limit,),
+            _SESSION_QUERY + " ORDER BY s.created_at DESC, s.rowid DESC LIMIT ?", (limit,)
         )
-        return [
-            SessionInfo(
-                id=row["id"],
-                created_at=datetime.fromisoformat(row["created_at"]),
-                model=row["model"],
-                message_count=row["message_count"],
-                first_user_message=row["first_user_message"],
-            )
-            for row in rows
-        ]
+        return [_session_info(row) for row in rows]
 
 
 def _handoff(row: sqlite3.Row) -> Handoff:
