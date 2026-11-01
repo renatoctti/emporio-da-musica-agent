@@ -19,7 +19,7 @@
 | 07-returns-handoff | 🟢 Done | 59 tests |
 | 08-agent-loop | 🟢 Done | 51 tests |
 | 09-cli | 🟢 Done | 28 tests |
-| 10-routing-eval | 🔴 Not started | |
+| 10-routing-eval | 🟡 Code done, live run pending | 19 tests; needs LLM_API_KEY for the live run |
 | 11-samples-readme | 🔴 Not started | |
 
 > Legend: 🔴 not started · 🟡 in progress · 🟢 done · ❌ blocked
@@ -83,12 +83,20 @@
 - Transcripts show each tool call and a truncated result, so the data lookups are visible in the samples.
 - 28 new tests with injected I/O and a fake model, plus 3 for the persistence extensions.
 
+### 2026-10-31: spec 10, routing eval (code)
+
+- Added `evals/`: 21 scenarios (catalog, price rules, returns, orders, privacy, scope, language, handoff), a price-grounding check that every R$ amount in a reply appears in a tool result or in the customer's message, and the `python -m emporio.evals` command with a JSON report.
+- 19 new tests with a scripted model. The live run against a real model is still pending (no API key yet).
+
 ---
 
 ## Decisions made during implementation
 
 | Decision | Spec | Rationale |
 |---|---|---|
+| Case E08 expects `get_order_status` instead of both `verify_customer` and `get_order_status` | 10 | `expect_tools_any` means at least one; the order tool refuses to answer without a verification, so calling it implies the verification happened. |
+| Number parsing is split: tool results are read as JSON (dot decimal), customer text as Brazilian format | 10 | A single pattern read 439.2 as 439; a unit test caught it. |
+| `python -m emporio.evals` lives in `evals/__main__.py` | 10 | That is the file Python runs for `-m`; the spec listed it as the command line module. |
 | Added `SessionStore.append_messages` (one transaction per turn) and `SessionStore.get_session`; `SessionInfo` gained an optional `reference_date` | 09 | A turn has several messages and a failure halfway would leave a history the API rejects on resume; the export header needs the model and reference date. These three tests in `test_db.py` were written together with the code, not before it. |
 | `main` accepts keyword-only `env`, `client_factory`, `read` and `write` | 09 | Lets the tests run the real command parsing with a fake model and injected I/O. |
 | An invalid `--today` exits with code 2 and `replay` of a missing script exits with code 2 | 09 | Both are user input errors, like an unknown session id. |

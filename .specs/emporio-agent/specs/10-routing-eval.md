@@ -1,6 +1,6 @@
 # Spec 10: Routing eval
 
-**Status:** 🟡 Draft
+**Status:** 🟢 Implemented
 **Author:** renatoctti
 **Date:** 2026-10-31
 **Scope:** evaluation cases and runner
@@ -45,12 +45,12 @@ into the README, including a comparison between two models.
 
 | ID | Requirement | Priority | Acceptance criterion |
 |---|---|---|---|
-| 🟡 RF-01 | `EvalCase` has: `id`, `messages` (customer turns), `today` (ISO date, default `2026-03-25`), `verified_as` (customer id preset in the state, or `None`), `expect_tools_any` (at least one of these tools must be called), `forbid_tools`, `reply_must_match_any` (regexes, at least one matches the final reply), `reply_must_not_match` (regexes, none may match any reply), `tags` | Must | Dataclass with these fields; `CASES` has between 18 and 24 entries with unique ids |
-| 🟡 RF-02 | `grounded_prices(reply, tool_results, user_text)` finds every `R$ <amount>` in the reply (Brazilian format `1.499,90`, `R$1000`, `R$ 80`) and reports amounts that appear in neither the tool results (as numbers) nor the customer's messages | Must | Reply "custa R$ 2.199,00" with a tool result containing `2199.0` is grounded; "R$ 2.500,00" is not |
-| 🟡 RF-03 | `evaluate_case(case, turns)` returns pass/fail with the list of failed checks: missing expected tool, forbidden tool called, reply patterns, ungrounded prices | Must | Unit tests for each failing check |
-| 🟡 RF-04 | `run_case` builds a fresh `StoreData`, `SessionState` (preset when `verified_as`), in-memory stores, toolset, agent; runs the messages in order; returns the turns (reply plus tool call records) | Must | With a `FakeChatClient` the runner returns the scripted turns |
-| 🟡 RF-05 | The command `python -m emporio.evals [--model M] [--case ID] [--tag T] [--report FILE]` runs the cases with a real client, prints one line per case (`PASS`/`FAIL`, id, failed checks) and a summary (`passed/total`, total tool calls, tokens when the API reports them), and writes the full JSON report to `--report` | Must | Exit code 0 when it ran (even with failures); 1 on missing key |
-| 🟡 RF-06 | The runner never persists to the real database; it uses in-memory stores only | Must | Tests run with in-memory stores only |
+| ✅ RF-01 | `EvalCase` has: `id`, `messages` (customer turns), `today` (ISO date, default `2026-03-25`), `verified_as` (customer id preset in the state, or `None`), `expect_tools_any` (at least one of these tools must be called), `forbid_tools`, `reply_must_match_any` (regexes, at least one matches the final reply), `reply_must_not_match` (regexes, none may match any reply), `tags` | Must | Dataclass with these fields; `CASES` has between 18 and 24 entries with unique ids |
+| ✅ RF-02 | `grounded_prices(reply, tool_results, user_text)` finds every `R$ <amount>` in the reply (Brazilian format `1.499,90`, `R$1000`, `R$ 80`) and reports amounts that appear in neither the tool results (as numbers) nor the customer's messages | Must | Reply "custa R$ 2.199,00" with a tool result containing `2199.0` is grounded; "R$ 2.500,00" is not |
+| ✅ RF-03 | `evaluate_case(case, turns)` returns pass/fail with the list of failed checks: missing expected tool, forbidden tool called, reply patterns, ungrounded prices | Must | Unit tests for each failing check |
+| ✅ RF-04 | `run_case` builds a fresh `StoreData`, `SessionState` (preset when `verified_as`), in-memory stores, toolset, agent; runs the messages in order; returns the turns (reply plus tool call records) | Must | With a `FakeChatClient` the runner returns the scripted turns |
+| ✅ RF-05 | The command `python -m emporio.evals [--model M] [--case ID] [--tag T] [--report FILE]` runs the cases with a real client, prints one line per case (`PASS`/`FAIL`, id, failed checks) and a summary (`passed/total`, total tool calls, tokens when the API reports them), and writes the full JSON report to `--report` | Must | Exit code 0 when it ran (even with failures); 1 on missing key |
+| ✅ RF-06 | The runner never persists to the real database; it uses in-memory stores only | Must | Tests run with in-memory stores only |
 
 ---
 
@@ -87,7 +87,7 @@ Dates use the default reference date 2026-03-25 unless the row says otherwise. "
 
 ## Contracts
 
-**`src/emporio/evals/cases.py`** 🟡
+**`src/emporio/evals/cases.py`** ✅
 
 ```python
 @dataclass(frozen=True)
@@ -106,7 +106,7 @@ class EvalCase:
 CASES: tuple[EvalCase, ...]
 ```
 
-**`src/emporio/evals/runner.py`** 🟡
+**`src/emporio/evals/runner.py`** ✅
 
 ```python
 @dataclass(frozen=True)
@@ -128,10 +128,10 @@ def run_case(case: EvalCase, client: ChatClient, settings: Settings) -> CaseResu
 
 | ID | Scenario | Trigger | Expected behavior |
 |---|---|---|---|
-| 🟡 EC-01 | Price formats | `R$1000`, `R$ 1.000`, `R$ 1.000,50`, `R$ 80` | All parsed to floats |
-| 🟡 EC-02 | Amount present only in the question | customer says "até R$ 1000", reply repeats R$ 1000 | Grounded by the user text |
-| 🟡 EC-03 | Tool result with numbers in JSON | `"price_brl": 439.2` | Matched numerically with a 0.005 tolerance |
-| 🟡 EC-04 | Invalid regex in a case | typo | Fails the unit test that compiles every pattern in `CASES` |
+| ✅ EC-01 | Price formats | `R$1000`, `R$ 1.000`, `R$ 1.000,50`, `R$ 80` | All parsed to floats |
+| ✅ EC-02 | Amount present only in the question | customer says "até R$ 1000", reply repeats R$ 1000 | Grounded by the user text |
+| ✅ EC-03 | Tool result with numbers in JSON | `"price_brl": 439.2` | Matched numerically with a 0.005 tolerance |
+| ✅ EC-04 | Invalid regex in a case | typo | Fails the unit test that compiles every pattern in `CASES` |
 
 ---
 
@@ -139,10 +139,10 @@ def run_case(case: EvalCase, client: ChatClient, settings: Settings) -> CaseResu
 
 | # | Target | Scenario | Fixture | Expected result | Test file |
 |---|---|---|---|---|---|
-| 🟡 T-01 | `CASES` | integrity | all cases | RF-01, EC-04, known tool names only | `tests/test_evals.py` |
-| 🟡 T-02 | `grounded_prices` | formats and grounding | strings | RF-02, EC-01 to EC-03 | `tests/test_evals.py` |
-| 🟡 T-03 | `evaluate_case` | each failure kind and a pass | hand-built turns | RF-03 | `tests/test_evals.py` |
-| 🟡 T-04 | `run_case` | scripted fake model | `FakeChatClient` | RF-04, RF-06 | `tests/test_evals.py` |
+| ✅ T-01 | `CASES` | integrity | all cases | RF-01, EC-04, known tool names only | `tests/test_evals.py` |
+| ✅ T-02 | `grounded_prices` | formats and grounding | strings | RF-02, EC-01 to EC-03 | `tests/test_evals.py` |
+| ✅ T-03 | `evaluate_case` | each failure kind and a pass | hand-built turns | RF-03 | `tests/test_evals.py` |
+| ✅ T-04 | `run_case` | scripted fake model | `FakeChatClient` | RF-04, RF-06 | `tests/test_evals.py` |
 
 ### Acceptance criterion
 
@@ -155,11 +155,11 @@ python -m emporio.evals --report evals-report.json     # live, needs LLM_API_KEY
 
 ## Implementation checklist
 
-- [ ] 🟡 `git diff --stat` checked against **Allowed files**
-- [ ] 🟡 Tests written before the code
-- [ ] 🟡 Every regex in `CASES` compiles (tested)
-- [ ] 🟡 One live run recorded in `progress.md` with model, pass count and any failing case
-- [ ] 🟡 `ruff check` and `ruff format --check` pass
+- [x] ✅ `git diff --stat` checked against **Allowed files**
+- [x] ✅ Tests written before the code
+- [x] ✅ Every regex in `CASES` compiles (tested)
+- [ ] One live run recorded in `progress.md` with model, pass count and any failing case (pending: needs LLM_API_KEY)
+- [x] ✅ `ruff check` and `ruff format --check` pass
 
 ## Open questions
 
@@ -169,6 +169,6 @@ None.
 
 | Rule | Status | Note |
 |---|---|---|
-| Eval depends on the agent, never the reverse | 🟡 | |
-| No silent catch | 🟡 | |
-| Scope respected | 🟡 | |
+| Eval depends on the agent, never the reverse | ✅ | |
+| No silent catch | ✅ | |
+| Scope respected | ✅ | |
