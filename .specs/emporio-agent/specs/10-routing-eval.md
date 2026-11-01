@@ -158,7 +158,7 @@ python -m emporio.evals --report evals-report.json     # live, needs LLM_API_KEY
 - [x] ✅ `git diff --stat` checked against **Allowed files**
 - [x] ✅ Tests written before the code
 - [x] ✅ Every regex in `CASES` compiles (tested)
-- [ ] One live run recorded in `progress.md` with model, pass count and any failing case (pending: needs LLM_API_KEY)
+- [x] ✅ Live runs recorded in `progress.md` and in `evals/results/`
 - [x] ✅ `ruff check` and `ruff format --check` pass
 
 ## Open questions

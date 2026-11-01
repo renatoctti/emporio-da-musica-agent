@@ -19,7 +19,7 @@
 | 07-returns-handoff | 🟢 Done | 59 tests |
 | 08-agent-loop | 🟢 Done | 51 tests |
 | 09-cli | 🟢 Done | 28 tests |
-| 10-routing-eval | 🟡 Code done, live run pending | 19 tests; needs LLM_API_KEY for the live run |
+| 10-routing-eval | 🟢 Done | 20 tests; live runs: claude-haiku-5.5 21/21, qwen3.7-flash 20/21 |
 | 11-samples-readme | 🔴 Not started | |
 
 > Legend: 🔴 not started · 🟡 in progress · 🟢 done · ❌ blocked
@@ -88,6 +88,14 @@
 - Added `evals/`: 21 scenarios (catalog, price rules, returns, orders, privacy, scope, language, handoff), a price-grounding check that every R$ amount in a reply appears in a tool result or in the customer's message, and the `python -m emporio.evals` command with a JSON report.
 - 19 new tests with a scripted model. The live run against a real model is still pending (no API key yet).
 
+### 2026-10-31: spec 10, live runs
+
+- First run with `anthropic/claude-haiku-5.5`: 18/21 (about 150k input tokens, a couple of cents). Report kept in `evals/results/claude-haiku-5.5-run1.json`.
+- E18 was a real failure: an English question was answered in Portuguese. Rule 1 of the prompt now ties the language to the customer's latest message.
+- E06 and E21 were wrong test design, not agent errors: E06 pre-verified a customer the model could not know about (now the customer gives the order and e-mail in the conversation), and E21 forbade the words "em estoque" that the reply legitimately uses for the alternatives.
+- The first sample transcript for installments showed the model working out the 10x limit itself instead of calling `get_product`; the prompt now says installments and the PIX price exist only there.
+- Final runs with the final prompt: `claude-haiku-5.5` 21/21 (160k in, 7k out, about US$ 0.02) and `qwen/qwen3.7-flash` 20/21 (109k in, 10k out, about US$ 0.005); the cheaper model fails E18 (English question answered in Portuguese). Reports in `evals/results/`.
+- The cases and the prompt were adjusted after seeing results, so these numbers are not a held-out measurement.
 ---
 
 ## Decisions made during implementation
