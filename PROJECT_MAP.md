@@ -46,6 +46,7 @@
 | Data layer | `pandas` over the CSVs in `data/`, cleaned in memory at load; no database for the store data | `data.py` |
 | Policy retrieval | `pypdf` splits the manual PDF into its numbered sections; one tool returns the requested sections | `policies.py` |
 | Storage | `sqlite3` (standard library): sessions, messages, handoff tickets | `db.py` |
+| Web interface | Standard-library HTTP server and a static page (HTML, CSS, JavaScript); no framework, no build step, no external request | `web/` |
 | Config | `python-dotenv` reading `.env` | `config.py` |
 | Argument validation | Each tool's JSON schema is checked before the function runs; no pydantic | `tools.py` |
 | Tests | `pytest` (`python -m pytest -q`) | `pyproject.toml` |
@@ -64,11 +65,14 @@ src/emporio/
   hours.py returns.py handoff.py   opening hours; return eligibility; handoff tickets
   db.py                  SQLite repositories
   tools.py prompt.py llm.py agent.py   tool registry, system prompt, model client, loop
+  conversation.py        the agent for one session, shared by the CLI and the web page
   cli.py __main__.py     command line
+  web/                   local web interface: app.py (routes), server.py, static/ (the page)
   evals/                 routing eval (cases, runner, command)
 tests/                   pytest; fakes.py is the scripted fake model
 samples/                 customer scripts and the generated transcripts
 evals/results/           JSON reports of live eval runs
+docs/                    screenshots of the web interface
 .specs/emporio-agent/    overview, plan, progress log and the 11 specs
 ```
 
@@ -86,10 +90,11 @@ not read CSVs.
 | A prompt rule | `prompt.py`, plus a marker phrase in `tests/test_prompt.py` |
 | A routing scenario | `src/emporio/evals/cases.py` |
 | A sample conversation | A script in `samples/scripts/`, then `emporio replay` |
+| A change to the page | `src/emporio/web/static/`; check both themes and a 390 px width by hand, tests cannot judge the design |
 
 ## 6. Tests
 
-- Separate tree, `tests/test_*.py`, about 300 tests; unit tests use the real `data/` and a scripted
+- Separate tree, `tests/test_*.py`, about 370 tests; unit tests use the real `data/` and a scripted
   fake model, never a real LLM.
 - Command: `python -m pytest -q`. The live eval is separate: `python -m emporio.evals`.
 
@@ -104,7 +109,7 @@ not read CSVs.
 - **Secrets:** `.env` is git-ignored; `.env.example` lists the variables.
 - **Customer data:** `data/customers.csv` and the SQLite file (`var/`, git-ignored) hold personal
   data. Order data is shown only after the identity check in `orders.py`; no tool accepts a
-  customer id or name.
+  customer id or name. The web server listens on 127.0.0.1 and refuses other Host and Origin values.
 
 ## 11. Code conventions
 

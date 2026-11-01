@@ -20,6 +20,7 @@ deadlines, who may see an order) is computed by code, not by the model.
   response deadline counted in store opening hours.
 - Replies in the customer's language (Portuguese, English or Spanish were exercised).
 - Conversations are saved in SQLite and can be resumed or exported as Markdown.
+- A local web interface (`emporio web`) with light and dark themes and a panel that shows, for every reply, which lookups the agent made.
 
 ## Quick start
 
@@ -35,7 +36,8 @@ pip install -e ".[dev]"
 cp .env.example .env             # Windows: copy .env.example .env
 # edit .env and set LLM_API_KEY
 emporio                          # or: python -m emporio
-python -m pytest -q              # about 300 tests, no API key needed
+emporio web                      # the same agent in the browser, http://127.0.0.1:8765
+python -m pytest -q              # about 370 tests, no API key needed
 ```
 
 The sample data ends in March 2026, so for realistic dates (delivery estimates, return windows)
@@ -65,6 +67,7 @@ Set in `.env` (see `.env.example`) or in the environment. Blank values count as 
 | `emporio` or `emporio chat` | Talk to Melô. Type `sair`, `exit` or `quit` (or Ctrl-C) to leave; the session id is printed. |
 | `emporio chat --resume ID` | Continue a stored conversation. The identity check is **not** restored: the customer confirms the order again. |
 | `emporio chat --verbose` | Print every tool call and a truncated result to stderr. |
+| `emporio web [--port N] [--today D] [--no-browser]` | Open the chat in the browser, local only. See [Web interface](#web-interface). |
 | `emporio sessions` | List stored conversations. |
 | `emporio handoffs` | List open handoff tickets (what the store team would see). |
 | `emporio export ID [-o FILE]` | Render a conversation as Markdown, with the tool calls. |
@@ -72,11 +75,33 @@ Set in `.env` (see `.env.example`) or in the environment. Blank values count as 
 | `emporio data-report` | List the problems found in the CSV files and how many. |
 | `python -m emporio.evals [--model M] [--case ID] [--report FILE]` | Run the routing eval against a real model. |
 
-## Architecture
+### Web interface
 
+`emporio web` opens the same agent in the browser at `http://127.0.0.1:8765`. Next to every reply,
+a panel shows which lookups the agent made (catalog and order data, the manual, the identity check,
+the return rules, a human handoff) with the arguments and the result of each one, so you can see
+**when it chose data, when it chose policy and when it handed over to a person**. A second tab
+shows the handoff tickets as the store team would see them, and a dialog offers two fictional
+customers from the provided data to try the identity check.
+
+![The web interface in the light theme](docs/web-interface-light.jpg)
+
+![The web interface in the dark theme](docs/web-interface-dark.jpg)
+
+- A system, light and dark theme control, remembered in the browser. Both themes are designed
+  separately and the text keeps AA contrast in each.
+- On a phone-sized screen the panel becomes a drawer.
+- No external request and no extra dependency: a standard-library server and a page of plain HTML,
+  CSS and JavaScript, so it also works offline.
+- It listens on `127.0.0.1` only and refuses requests whose host or origin is not local, because it
+  uses your API key and shows personal data. Replies are inserted as text, never as HTML.
+- For a return inside the 7-day window run `emporio web --today 2026-02-19` and use customer 7
+  from "Dados de teste".
+
+## Architecture
 ```
 customer text
-   -> CLI (cli.py)                          history and tickets in SQLite (db.py)
+   -> CLI (cli.py) or web page (web/)       history and tickets in SQLite (db.py)
    -> Agent loop (agent.py)  <->  LLM client (llm.py, OpenAI-compatible)
         | tool calls (JSON schemas, validated)
         v
@@ -93,6 +118,7 @@ customer text
 Rules that keep it honest:
 
 - Tools never import the LLM client, and the agent loop never reads the CSVs.
+- The CLI and the web page build the agent the same way (`conversation.py`).
 - Business conditions (not found, not verified, invalid argument) are returned to the model as
   `{"error": {"code", "message"}}`. Infrastructure failures (disk, SQLite, network) raise.
 - The model sends only the arguments in each tool's schema. The data, the verification state,
@@ -110,6 +136,7 @@ Rules that keep it honest:
 | Policies | The PDF is split into its 28 numbered sections; the section index is in the system prompt and one tool returns the requested sections | The manual is short and well structured, so section lookup is exact, cheap and lets the agent cite "item 4.1". Embeddings would add a dependency and fuzziness without a gain at this size. I would revisit it for a manual of tens of pages or for vague queries (BM25 plus embeddings). |
 | Model and provider | OpenAI-compatible client, OpenRouter, `anthropic/claude-haiku-5.5` | Reliable tool calling and good Brazilian Portuguese at about US$ 0.10 per million input tokens (OpenRouter listing, 2026-10-31); one code path serves other providers. A cheaper model was compared (see Evaluation). |
 | Interface | CLI, plus `export` and `replay` | The challenge asks for the agent, not a UI. `replay` makes the sample conversations reproducible instead of hand-written. |
+| Web interface | A small page served with the standard library, with a panel that shows the lookups behind every reply | The challenge grades when the agent chooses data, policy or a person, and that is easier to judge when each lookup sits next to its answer. No framework, no build step and no external request, so it adds no dependency and works offline. It answers only local requests because it spends an API key and shows personal data. |
 | Persistence | SQLite (standard library) for messages, sessions and tickets | A customer can resume a conversation and the store team can list tickets, with no server and no extra dependency. Each turn is saved in one transaction so a resumed history is always valid. |
 | Identity | Order number plus the e-mail or phone registered on that order, checked in code | Order numbers are guessable and names are not secret. A wrong contact and an unknown order give the same answer, and three failures lock the session. |
 | Handoff | A simulated ticket in SQLite with protocol `EMP-YYYYMMDD-NNNN` | Item 7.3 of the manual asks for "register and forward, answer in 24 business hours". There is no real queue to call, so the ticket is stored and listed by `emporio handoffs`. |
@@ -223,6 +250,7 @@ Known limits:
   is a double bass, for a Brazilian "violão".
 - **The eval is small and was tuned** (see Evaluation); it has no multi-turn adversarial cases.
 - **Not connected to WhatsApp**; there is no streaming and no latency work.
+- **The web page is for one person on one machine.** It holds one conversation at a time, answers only local requests and is not meant to be exposed to a network. It was checked by hand in Chrome (desktop width and a 390 px frame, both themes), not in Firefox or Safari, and its JavaScript has no automated tests.
 
 With more time I would: add a hybrid (BM25 plus embeddings) lookup for the manual, connect the
 handoff to a real queue, add a holiday calendar and a freight API by ZIP code, rate-limit and log
@@ -247,7 +275,7 @@ I used **Claude** through **Claude Code** to build this project, with a spec-dri
    were written together with the code.
 4. **Running against a real model.** Claude drafted the code and the specs from my decisions; the
    live eval and the sample replays then found problems that unit tests could not (the language
-   slip, the model computing installments itself), which led to prompt changes.
+   slip, the model computing installments itself), which led to prompt changes. The web interface followed the same path (spec 12, tests first) and its design was checked in a browser, because tests cannot say whether a page reads well.
 
 Claude also made mistakes along the way, and the tests caught them: wrong numbers in a spec's
 acceptance criteria, a price parser that read `439.2` as `439`, and two eval cases that were
@@ -273,9 +301,10 @@ Five conversations generated by the real agent with `emporio replay` (index and 
 
 ```
 data/                    the CSVs and the manual PDF, exactly as delivered
-src/emporio/             the package (see Architecture); evals/ holds the routing eval
-tests/                   about 300 tests; tests/fakes.py is the scripted fake model
+src/emporio/             the package (see Architecture); web/ is the browser interface, evals/ the routing eval
+tests/                   about 370 tests; tests/fakes.py is the scripted fake model
 samples/                 scripts (customer lines) and the generated transcripts
+docs/                    screenshots of the web interface
 evals/results/           JSON reports of the live eval runs
 .specs/emporio-agent/    overview, plan, progress log and the 11 specs
 PROJECT_MAP.md           stack and conventions at a glance

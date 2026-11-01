@@ -148,3 +148,13 @@ def test_every_sample_is_linked_from_the_readme():
     block = section("## Sample conversations")
     for name in NAMES:
         assert f"samples/{name}.md" in block
+
+
+def test_readme_documents_the_web_interface_with_screenshots():
+    text = readme()
+    assert "emporio web" in text and "### Web interface" in text
+    for image in ("docs/web-interface-light.jpg", "docs/web-interface-dark.jpg"):
+        assert image in text, image
+        assert (ROOT / image).stat().st_size > 10_000, image
+    limits = section("## Limitations and next steps").lower()
+    assert "web page" in limits and "firefox" in limits
