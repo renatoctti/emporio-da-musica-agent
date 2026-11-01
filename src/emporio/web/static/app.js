@@ -206,8 +206,10 @@
     app.turns.forEach(function (turn, index) { list.append(traceTurn(turn, index)); });
     $("#trace-empty").hidden = app.turns.length > 0;
     var total = app.turns.reduce(function (sum, turn) { return sum + turn.trace.length; }, 0);
-    $("#trace-count").hidden = total === 0;
-    $("#trace-count").textContent = String(total);
+    ["#trace-count", "#panel-tab-count"].forEach(function (selector) {
+      $(selector).hidden = total === 0;
+      $(selector).textContent = String(total);
+    });
   }
 
   function focusTurn(index) {
@@ -357,6 +359,7 @@
     $("#btn-test").addEventListener("click", function () { $("#test-dialog").showModal(); });
     $("#test-close").addEventListener("click", function () { $("#test-dialog").close(); });
     $("#btn-panel").addEventListener("click", function () { openPanel(document.body.dataset.panel !== "open"); });
+    $("#panel-tab").addEventListener("click", function () { openPanel(true); $("#tab-trace").focus(); });
     $("#btn-close").addEventListener("click", function () { openPanel(false); $("#btn-panel").focus(); });
     $("#backdrop").addEventListener("click", function () { openPanel(false); });
     document.addEventListener("keydown", function (event) { if (event.key === "Escape" && narrowQuery.matches && document.body.dataset.panel === "open") openPanel(false); });

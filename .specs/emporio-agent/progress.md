@@ -147,3 +147,8 @@
 | `OpenAIChatClient` keeps a `usage` counter and tool arguments sent as null are treated as omitted | 08 | The eval reports token use; models often send null for optional arguments. |
 | `tests/__init__.py` added so tests can import `tests.fakes` | 08 | Shared fake client for the agent, CLI and eval tests. |
 | Exposed `require_owned_order(data, state, order_id)` from `orders.py` | 06 | Spec 07 needs the same ownership rule; reusing it avoids a second copy of the check that decides who may see an order. |
+
+### 2026-11-01: spec 12, visible way to open the panel
+
+- Added at the author's request, because it was not clear that the Como decidiu button opens a side panel. The button now carries a side-panel icon whose right pane is filled while the panel is open and empty while it is collapsed, and it takes the accent color when collapsed. On a wide screen a collapsed panel also leaves a vertical tab on the right edge of the window, with an arrow, the words Como decidiu and the number of lookups; clicking it reopens the panel and moves focus into it.
+- Test-first again, with the same limit: the new test only reads the files. Checked in Chrome in both themes: the tab and the icon states, the click on the tab, focus landing on the first tab of the panel, no console errors. The screenshots in docs/ were retaken because the header now shows the button.

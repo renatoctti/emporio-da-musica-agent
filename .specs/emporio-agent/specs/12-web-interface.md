@@ -77,6 +77,7 @@ a short invitation and four example questions that each name what they demonstra
   label, a one-line summary and the arguments and result on expand; each reply carries small
   labels of the kinds used and selecting one scrolls the panel to that turn.
 - **Collapsible panel.** The side panel can be collapsed and expanded at any width: a header button and a close button inside the panel. On a wide screen the choice is remembered in the browser and the chat takes the whole width while the panel is hidden; opening a reply's label expands it again. Under 900 px the same control opens and closes the drawer, and the dimmed backdrop appears only there.
+- **Visible way to open the panel.** The header button carries a side-panel icon whose right pane is filled while the panel is open. While the panel is collapsed on a wide screen, a vertical tab with an arrow, the words Como decidiu and the number of lookups stays on the right edge of the window and opens it.
 - **Store panel.** A second tab lists the open tickets; opening one in the chat updates it.
 - **Identity.** After a successful check the composer area shows who is verified.
 - **States.** Empty, waiting, error (with a retry that resends the message) and success.

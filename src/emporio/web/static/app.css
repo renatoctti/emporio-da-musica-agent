@@ -149,6 +149,11 @@ h1, h2, h3, p, ul, ol, dl, dd { margin: 0; }
 .btn-primary { border-color: var(--accent); background: var(--accent); color: var(--on-accent); font-weight: 600; }
 .btn-primary:hover { background: var(--accent); border-color: var(--accent); filter: brightness(1.1); }
 .btn .icon { display: none; }
+.btn .panel-icon { display: block; }
+.pane-fill { fill: currentColor; stroke: none; }
+.btn[aria-expanded="false"] .pane-fill { fill: none; }
+.btn#btn-panel[aria-expanded="false"] { border-color: var(--accent); color: var(--accent); }
+.panel-tab { display: none; }
 .icon-btn { display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 6px; background: none; color: var(--ink); }
 .icon-btn:hover { background: var(--subtle); }
 .seg { display: inline-flex; height: 34px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
@@ -318,6 +323,16 @@ dialog::backdrop { background: rgb(8 14 20 / 0.5); }
 @media (min-width: 901px) {
   body[data-panel="closed"] .layout { grid-template-columns: minmax(0, 1fr); }
   body[data-panel="closed"] .side { display: none; }
+  body[data-panel="closed"] .panel-tab {
+    position: fixed; top: 50%; right: env(safe-area-inset-right, 0px); z-index: 10; transform: translateY(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 7px;
+    border: 1px solid var(--accent); border-right: 0; border-radius: 8px 0 0 8px;
+    background: var(--bg); color: var(--accent); font-size: 13px; font-weight: 600;
+    box-shadow: -2px 0 12px rgb(0 0 0 / 0.1); transition: background 0.12s;
+  }
+  body[data-panel="closed"] .panel-tab:hover { background: var(--subtle); }
+  .panel-tab-label { writing-mode: vertical-rl; letter-spacing: 0.02em; }
+  .panel-tab .badge { margin-left: 0; }
 }
 
 /* ---- narrow screens: the panel becomes a drawer ---- */
