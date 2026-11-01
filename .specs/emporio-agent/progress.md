@@ -16,7 +16,7 @@
 | 04-policy-retrieval | 🟢 Done | 14 tests |
 | 05-persistence | 🟢 Done | 13 tests |
 | 06-customer-orders | 🟢 Done | 26 tests |
-| 07-returns-handoff | 🔴 Not started | |
+| 07-returns-handoff | 🟢 Done | 59 tests |
 | 08-agent-loop | 🔴 Not started | |
 | 09-cli | 🔴 Not started | |
 | 10-routing-eval | 🔴 Not started | |
@@ -63,6 +63,12 @@
 - Added `session.py` (`SessionState`) and `orders.py`: `verify_customer`, `get_order_status`, `list_my_orders` and the shared `require_owned_order`.
 - Verification compares the e-mail or phone with the customer who owns the order (the e-mail shared by customers 11 and 43 never crosses orders); wrong contact and unknown order give identical answers; three failures lock the session.
 - 26 new tests on the real data.
+
+### 2026-10-31: spec 07, business hours, returns and handoff
+
+- Added `hours.py` (opening hours and business-hour arithmetic), `returns.py` (`check_return_eligibility`: regret and preference 7 days from receipt, defect exchange 30 days from purchase, then legal warranty 90 days from receipt, then manufacturer warranty) and `handoff.py` (`open_handoff` with a protocol and a 24 business-hour deadline).
+- 59 new tests, including Saturday, Sunday and out-of-hours arithmetic and every window boundary.
+- An open ticket for the same order and category is reused instead of duplicated.
 
 ---
 
