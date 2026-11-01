@@ -13,7 +13,7 @@
 | 01-foundation-data | 🟢 Done | 21 tests, ruff clean |
 | 02-pricing | 🟢 Done | 30 tests |
 | 03-catalog | 🟢 Done | 23 tests |
-| 04-policy-retrieval | 🔴 Not started | |
+| 04-policy-retrieval | 🟢 Done | 14 tests |
 | 05-persistence | 🔴 Not started | |
 | 06-customer-orders | 🔴 Not started | |
 | 07-returns-handoff | 🔴 Not started | |
@@ -45,6 +45,13 @@
 - Added `catalog.py`: `search_products` (name, category, price, string type, electroacoustic filters) and `get_product` (price quote, expired promotions, alternatives).
 - 23 new tests on the real data; a named product is found even when unavailable, plain listings only show products in stock.
 - Price filters use the current (promotional) price.
+
+### 2026-10-31: spec 04, policy retrieval
+
+- Added `policies.py`: the manual is parsed with pypdf (layout mode) into the 28 numbered sections; page headers and footers are dropped, table rows are joined with pipes, and the two contradictions (WhatsApp number and e-mail accent) are corrected after extraction.
+- Heading detection accepts top-level ids only in increasing order, so the numbered list of item 7.2 is not mistaken for sections.
+- `get_policy_sections` expands a top-level id to its subsections and reports unknown ids.
+- Added `pypdf` to the dependencies.
 
 ---
 
