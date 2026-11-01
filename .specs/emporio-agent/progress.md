@@ -12,7 +12,7 @@
 |---|---|---|
 | 01-foundation-data | 🟢 Done | 21 tests, ruff clean |
 | 02-pricing | 🟢 Done | 30 tests |
-| 03-catalog | 🔴 Not started | |
+| 03-catalog | 🟢 Done | 23 tests |
 | 04-policy-retrieval | 🔴 Not started | |
 | 05-persistence | 🔴 Not started | |
 | 06-customer-orders | 🔴 Not started | |
@@ -39,6 +39,12 @@
 - Added `pricing.py`: promotion, PIX (only without promotion) and installment options by the item 3.1 tiers.
 - 30 new tests (boundaries at 100, 150, 320 and 700 reais; contiguity of options).
 - Decimal arithmetic is done exactly and rounded once through `results.round_brl`.
+
+### 2026-10-31: spec 03, catalog search and product detail
+
+- Added `catalog.py`: `search_products` (name, category, price, string type, electroacoustic filters) and `get_product` (price quote, expired promotions, alternatives).
+- 23 new tests on the real data; a named product is found even when unavailable, plain listings only show products in stock.
+- Price filters use the current (promotional) price.
 
 ---
 
