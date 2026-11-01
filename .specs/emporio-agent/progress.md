@@ -17,7 +17,7 @@
 | 05-persistence | 🟢 Done | 13 tests |
 | 06-customer-orders | 🟢 Done | 26 tests |
 | 07-returns-handoff | 🟢 Done | 59 tests |
-| 08-agent-loop | 🔴 Not started | |
+| 08-agent-loop | 🟢 Done | 51 tests |
 | 09-cli | 🔴 Not started | |
 | 10-routing-eval | 🔴 Not started | |
 | 11-samples-readme | 🔴 Not started | |
@@ -70,10 +70,20 @@
 - 59 new tests, including Saturday, Sunday and out-of-hours arithmetic and every window boundary.
 - An open ticket for the same order and category is reused instead of duplicated.
 
+### 2026-10-31: spec 08, agent loop
+
+- Added `tools.py` (eight tools with JSON schemas, argument validation and injected context), `prompt.py` (Melô persona, store facts, current date and open/closed status, 13 rules, policy index), `llm.py` (OpenAI-compatible client) and `agent.py` (the loop).
+- 51 new tests with a scripted fake model; no test calls a real LLM.
+- The model cannot override the session, the data or the clock: injected values win and unexpected arguments are rejected.
+
 ---
 
 ## Decisions made during implementation
 
 | Decision | Spec | Rationale |
 |---|---|---|
+| Corrected the acceptance count of RF-08 from 5 to 6 new messages | 08 | Two tool rounds plus the final answer is user, assistant, tool, assistant, tool, assistant. |
+| The prompt has 13 rules instead of 12 | 08 | Added an explicit rule for out-of-stock, discontinued and coming-soon products (manual item 7.3). |
+| `OpenAIChatClient` keeps a `usage` counter and tool arguments sent as null are treated as omitted | 08 | The eval reports token use; models often send null for optional arguments. |
+| `tests/__init__.py` added so tests can import `tests.fakes` | 08 | Shared fake client for the agent, CLI and eval tests. |
 | Exposed `require_owned_order(data, state, order_id)` from `orders.py` | 06 | Spec 07 needs the same ownership rule; reusing it avoids a second copy of the check that decides who may see an order. |
