@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import sys
+import webbrowser
 from collections import defaultdict
 from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime
@@ -21,10 +22,13 @@ from emporio.data import load_store_data
 from emporio.db import HandoffStore, SessionStore, UnknownSessionError, connect
 from emporio.llm import ChatClient, MissingApiKeyError, OpenAIChatClient
 from emporio.policies import load_policy_sections
+from emporio.web.app import WebApp
+from emporio.web.server import make_server
 
-COMMANDS = ("chat", "sessions", "handoffs", "export", "replay", "data-report")
+COMMANDS = ("chat", "sessions", "handoffs", "export", "replay", "data-report", "web")
 EXIT_WORDS = frozenset({"sair", "exit", "quit"})
 POLICY_FILE = "políticas_da_loja.pdf"
+DEFAULT_WEB_PORT = 8765
 RESULT_PREVIEW_CHARS = 300
 GREETING = "Oi! Eu sou a Melô, assistente virtual da Empório da Música. Como posso ajudar?"
 RESUME_NOTICE = (
@@ -58,6 +62,11 @@ def build_parser() -> argparse.ArgumentParser:
     replay.add_argument("script", help="text file, one customer message per line")
     replay.add_argument("--today", metavar="YYYY-MM-DD", help="pretend today is this date")
     replay.add_argument("-o", "--output", metavar="FILE")
+
+    web = commands.add_parser("web", help="open the chat in the browser (local only)")
+    web.add_argument("--port", type=int, default=DEFAULT_WEB_PORT, help="default: 8765")
+    web.add_argument("--today", metavar="YYYY-MM-DD", help="pretend today is this date")
+    web.add_argument("--no-browser", action="store_true", help="do not open the browser")
     return parser
 
 
@@ -269,6 +278,32 @@ def _cmd_data_report(settings: Settings, write: Callable[[str], None]) -> int:
     return 0
 
 
+def _cmd_web(
+    args: argparse.Namespace,
+    settings: Settings,
+    client_factory: Callable[[Settings], ChatClient],
+    write: Callable[[str], None],
+) -> int:
+    client = client_factory(settings)  # first, so a missing key fails before anything is bound
+    app = WebApp(settings, client, port=args.port)
+    try:
+        server = make_server(app, args.port)
+    except OSError as exc:
+        print(f"Could not listen on 127.0.0.1:{args.port}: {exc.strerror}", file=sys.stderr)
+        return 1
+    url = f"http://127.0.0.1:{app.port}/"
+    write(f"Melô está no ar em {url} (Ctrl-C para encerrar)")
+    if not args.no_browser:
+        webbrowser.open(url)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        write("Encerrado.")
+    finally:
+        server.server_close()
+    return 0
+
+
 def main(
     argv: Sequence[str] | None = None,
     *,
@@ -290,6 +325,8 @@ def main(
         settings = load_settings({**env, **overrides})
         if args.command == "chat":
             return _cmd_chat(args, settings, client_factory, read, write)
+        if args.command == "web":
+            return _cmd_web(args, settings, client_factory, write)
         if args.command == "replay":
             return _cmd_replay(args, settings, client_factory, write)
         if args.command == "sessions":

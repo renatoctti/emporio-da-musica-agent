@@ -21,7 +21,7 @@
 | 09-cli | 🟢 Done | 28 tests |
 | 10-routing-eval | 🟢 Done | 20 tests; live runs: claude-haiku-5.5 21/21, qwen3.7-flash 20/21 |
 | 11-samples-readme | 🟢 Done | 21 structure tests; clean-venv install verified |
-| 12-web-interface | 🟡 In progress | |
+| 12-web-interface | 🟢 Done | 57 tests; manual pass in Chrome (desktop and a 390 px frame, both themes) |
 
 > Legend: 🔴 not started · 🟡 in progress · 🟢 done · ❌ blocked
 
@@ -103,12 +103,23 @@
 - README written: quick start (verified in a clean virtual environment: install, `emporio --help`, 310 tests passing), configuration, commands, architecture, decisions with the alternatives rejected, data handling, prompt strategy, evaluation with both models and the history of the first run, assumptions A1 to A13, limitations, AI assistant usage, samples and layout.
 - 21 structure tests over scripts, transcripts and the README, plus a guard that no document names the tools used to plan the work.
 
+### 2026-11-01: spec 12, local web interface
+
+- Added `conversation.py` (the agent setup the CLI and the page share), the `web/` package (`WebApp`, a standard-library server, and a page of plain HTML, CSS and JavaScript with no external request) and the `emporio web` command.
+- 57 new tests (routes, state, the trace of each tool, validation, host and origin checks, a model failure, a real HTTP round trip, and the static files). No test calls a real model.
+- Manual pass in Chrome: 1920 px in the light and the dark theme (system choice and the toggle), a real conversation with an identity check, an order lookup and a handoff, the test-data dialog, the store panel, and a 390 px frame for the phone layout and the drawer. The pass found and fixed four things the tests could not: buttons meant only for narrow screens showed on desktop (a CSS order problem), a doubled focus ring on the message field, icon-only buttons without an accessible name, and header chips that took three rows on a phone.
+- Not verified: Firefox and Safari, a real phone, and automated browser tests (the JavaScript has no unit tests).
 ---
 
 ## Decisions made during implementation
 
 | Decision | Spec | Rationale |
 |---|---|---|
+| The web session is created on first use instead of at startup | 12 | A server that fails to bind (port in use) leaves no empty session in the database. |
+| `theme.js` is a separate file | 12 | The page sends a Content-Security-Policy without inline scripts, and the saved theme must still be applied before the first paint. |
+| `/api/state` returns the turns of the current conversation | 12 | A page reload restores the transcript and the panel instead of showing an empty page over a live conversation. |
+| A failed identity check counts as a failed step in the trace (`ok` false) | 12 | The result is not an error object, but the panel should show it as a refusal. |
+| The page shows two fictional customers to try | 12 | An evaluator cannot guess a valid order and e-mail; both come from the provided data and the endpoint test checks that they pass the real identity check. |
 | The README does not claim that the author reviewed every commit | 11 | The assistant cannot know it happened; the AI section describes the workflow and the mistakes found instead. | 
 | The Spanish sample test checks intent (Spanish, mentions instruments, no tool call) instead of an exact word | 11 | The first version pinned a word from a model reply, which changes on every generation. |
 | The transcripts were regenerated with a fresh database each | 11 | A reused database made sample 04 reuse an older ticket (duplicate detection working, but a confusing example). |

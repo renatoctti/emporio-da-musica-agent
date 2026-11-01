@@ -1,3 +1,4 @@
+import socket
 from datetime import date, datetime
 
 import pytest
@@ -353,3 +354,43 @@ def test_malformed_tool_arguments_are_shown_as_the_model_sent_them():
         NOW,
     )
     assert "> tool: f({oops)" in cli.export_markdown(store, sid)
+
+
+# --- web ------------------------------------------------------------------------------------
+
+
+def test_web_without_an_api_key_exits_with_code_1_and_creates_no_session(env, capsys):
+    env = {k: v for k, v in env.items() if k != "LLM_API_KEY"}
+    code = cli.main(["web", "--no-browser"], env=env, write=lambda _t: None)
+    assert code == 1
+    assert "Set LLM_API_KEY (see .env.example)" in capsys.readouterr().err
+    assert SessionStore(connect(env["EMPORIO_DB_PATH"])).list_sessions() == []
+
+
+def test_web_on_a_busy_port_exits_with_code_1_and_creates_no_session(env, capsys):
+    with socket.socket() as busy:
+        busy.bind(("127.0.0.1", 0))
+        busy.listen()
+        port = busy.getsockname()[1]
+        code = cli.main(
+            ["web", "--port", str(port), "--no-browser"],
+            env=env,
+            client_factory=lambda settings: FakeChatClient([]),
+            write=lambda _t: None,
+        )
+    assert code == 1
+    assert f"127.0.0.1:{port}" in capsys.readouterr().err
+    assert SessionStore(connect(env["EMPORIO_DB_PATH"])).list_sessions() == []
+
+
+def test_web_is_a_known_command_with_its_options():
+    args = cli.build_parser().parse_args(
+        ["web", "--port", "9000", "--today", "2026-02-19", "--no-browser"]
+    )
+    assert (args.command, args.port, args.today, args.no_browser) == (
+        "web",
+        9000,
+        "2026-02-19",
+        True,
+    )
+    assert cli.build_parser().parse_args(["web"]).port == 8765

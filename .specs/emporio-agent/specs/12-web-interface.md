@@ -1,6 +1,6 @@
 # Spec 12: Local web interface
 
-**Status:** 🟡 Draft
+**Status:** 🟢 Implemented
 **Author:** renatoctti
 **Date:** 2026-11-01
 **Scope:** conversation setup shared with the CLI, a small local HTTP server, a static single-page UI
@@ -52,18 +52,18 @@ machine and stores personal data, so it listens on `127.0.0.1` only.
 
 | ID | Requirement | Priority | Acceptance criterion |
 |---|---|---|---|
-| 🟡 RF-01 | `start_conversation(settings, client, data, policies, handoffs, session_id)` builds the agent for one session and returns a `Conversation` with the `reply` function and its `SessionState`; the CLI uses it | Must | Every existing CLI test still passes unchanged |
-| 🟡 RF-02 | `emporio web [--port N] [--today D] [--no-browser]` serves on `127.0.0.1` (default port 8765) and opens the browser unless `--no-browser`; a missing API key exits with code 1 before binding; a busy port exits with code 1 and a message | Must | Port 0 in tests; both exit codes covered |
-| 🟡 RF-03 | `GET /` returns the page; `GET /static/<name>` returns only the files of the static folder with the right content type; anything else, including `..` paths, is 404 | Must | `/static/../../pyproject.toml` returns 404 |
-| 🟡 RF-04 | `GET /api/state` returns the store status (open or closed now, the next opening, hours, address, phone), the reference date and whether it is simulated, the model, the session id, the verified customer's first name or `null`, four suggestions, the number of open tickets, the two fictional customers an evaluator can use to try the identity check and the turns of the current conversation (so a page reload restores the transcript and the trace) | Must | Open on Wednesday 10:00, closed on Sunday with Monday 09:00 as next opening |
-| 🟡 RF-05 | `POST /api/chat` with `{"text"}` runs one turn, saves its messages in one transaction and returns `reply`, `trace`, `verified` and `handoffs_open` | Must | A scripted model answer and a stored conversation of 2 messages |
-| 🟡 RF-06 | Each trace item has `name`, `kind` (`data`, `policy`, `identity`, `rules`, `handoff`), a Portuguese `title` and `summary`, the parsed `arguments` (the `contact` value is replaced by `"(oculto)"`), the parsed `result` (cut when over 4000 characters, with `truncated: true`) and `ok` (false when the result is an error or the identity check failed) | Must | One test per tool name |
-| 🟡 RF-07 | `POST /api/reset` starts a new session and clears the verification | Must | `verified` is `null` afterwards and the session id changes |
-| 🟡 RF-08 | `GET /api/handoffs` lists the open tickets (protocol, category label, summary, due date, order) | Must | A ticket opened in a chat shows up |
-| 🟡 RF-09 | `POST` requests need `Content-Type: application/json`, a body of at most 16 KB and a text of 1 to 2000 characters after trimming; wrong route 404, wrong method 405 | Must | 400, 413, 415 covered |
-| 🟡 RF-10 | A request whose `Host` is not `127.0.0.1` or `localhost` with the server port, or whose `Origin` (when sent) is another origin, gets 403 | Must | Protects the API key's credit and the data from other web pages (DNS rebinding, cross-site posts) |
-| 🟡 RF-11 | A failure of the model or the network answers 502 with a short message (no traceback) and saves nothing for that turn | Must | A model that raises leaves the stored conversation unchanged |
-| 🟡 RF-12 | The static files make no external request (no `http://` or `https://` in a `src`, `href` or `url()`) and declare `lang="pt-BR"` | Must | Checked by a test over the three files |
+| ✅ RF-01 | `start_conversation(settings, client, data, policies, handoffs, session_id)` builds the agent for one session and returns a `Conversation` with the `reply` function and its `SessionState`; the CLI uses it | Must | Every existing CLI test still passes unchanged |
+| ✅ RF-02 | `emporio web [--port N] [--today D] [--no-browser]` serves on `127.0.0.1` (default port 8765) and opens the browser unless `--no-browser`; a missing API key exits with code 1 before binding; a busy port exits with code 1 and a message | Must | Port 0 in tests; both exit codes covered |
+| ✅ RF-03 | `GET /` returns the page; `GET /static/<name>` returns only the files of the static folder with the right content type; anything else, including `..` paths, is 404 | Must | `/static/../../pyproject.toml` returns 404 |
+| ✅ RF-04 | `GET /api/state` returns the store status (open or closed now, the next opening, hours, address, phone), the reference date and whether it is simulated, the model, the session id, the verified customer's first name or `null`, four suggestions, the number of open tickets, the two fictional customers an evaluator can use to try the identity check and the turns of the current conversation (so a page reload restores the transcript and the trace) | Must | Open on Wednesday 10:00, closed on Sunday with Monday 09:00 as next opening |
+| ✅ RF-05 | `POST /api/chat` with `{"text"}` runs one turn, saves its messages in one transaction and returns `reply`, `trace`, `verified` and `handoffs_open` | Must | A scripted model answer and a stored conversation of 2 messages |
+| ✅ RF-06 | Each trace item has `name`, `kind` (`data`, `policy`, `identity`, `rules`, `handoff`), a Portuguese `title` and `summary`, the parsed `arguments` (the `contact` value is replaced by `"(oculto)"`), the parsed `result` (cut when over 4000 characters, with `truncated: true`) and `ok` (false when the result is an error or the identity check failed) | Must | One test per tool name |
+| ✅ RF-07 | `POST /api/reset` starts a new session and clears the verification | Must | `verified` is `null` afterwards and the session id changes |
+| ✅ RF-08 | `GET /api/handoffs` lists the open tickets (protocol, category label, summary, due date, order) | Must | A ticket opened in a chat shows up |
+| ✅ RF-09 | `POST` requests need `Content-Type: application/json`, a body of at most 16 KB and a text of 1 to 2000 characters after trimming; wrong route 404, wrong method 405 | Must | 400, 413, 415 covered |
+| ✅ RF-10 | A request whose `Host` is not `127.0.0.1` or `localhost` with the server port, or whose `Origin` (when sent) is another origin, gets 403 | Must | Protects the API key's credit and the data from other web pages (DNS rebinding, cross-site posts) |
+| ✅ RF-11 | A failure of the model or the network answers 502 with a short message (no traceback) and saves nothing for that turn | Must | A model that raises leaves the stored conversation unchanged |
+| ✅ RF-12 | The static files make no external request (no `http://` or `https://` in a `src`, `href` or `url()`) and declare `lang="pt-BR"` | Must | Checked by a test over the three files |
 
 ### What the page must do (checked by hand in a browser)
 
@@ -89,7 +89,7 @@ a short invitation and four example questions that each name what they demonstra
 
 ## Contracts
 
-**`src/emporio/conversation.py`** 🟡
+**`src/emporio/conversation.py`** ✅
 
 ```python
 @dataclass
@@ -103,7 +103,7 @@ def start_conversation(settings: Settings, client: ChatClient, data: StoreData,
                        session_id: str) -> Conversation
 ```
 
-**`src/emporio/web/app.py`** 🟡
+**`src/emporio/web/app.py`** ✅
 
 ```python
 @dataclass(frozen=True)
@@ -121,7 +121,7 @@ class WebApp:
 def trace_item(name: str, arguments: str, result: str) -> dict[str, Any]
 ```
 
-**`src/emporio/web/server.py`** 🟡
+**`src/emporio/web/server.py`** ✅
 
 ```python
 def make_server(app: WebApp, port: int) -> http.server.HTTPServer   # binds 127.0.0.1 only
@@ -135,11 +135,11 @@ Errors in `/api/*` are `{"error": "<short message>"}`.
 
 | ID | Scenario | Trigger | Expected behavior |
 |---|---|---|---|
-| 🟡 EC-01 | Tool result that is not JSON | a tool returned plain text | `result` is the text, `ok` is true |
-| 🟡 EC-02 | Several tool calls in one turn | search and policy together | One trace item per call, in order |
-| 🟡 EC-03 | Text with only spaces | `"   "` | 400 and no model call |
-| 🟡 EC-04 | Host header spoofed | `evil.example` | 403 before anything runs |
-| 🟡 EC-05 | Reset during a verified conversation | verification then reset | The next order question asks for the identity again |
+| ✅ EC-01 | Tool result that is not JSON | a tool returned plain text | `result` is the text, `ok` is true |
+| ✅ EC-02 | Several tool calls in one turn | search and policy together | One trace item per call, in order |
+| ✅ EC-03 | Text with only spaces | `"   "` | 400 and no model call |
+| ✅ EC-04 | Host header spoofed | `evil.example` | 403 before anything runs |
+| ✅ EC-05 | Reset during a verified conversation | verification then reset | The next order question asks for the identity again |
 
 ---
 
@@ -147,19 +147,19 @@ Errors in `/api/*` are `{"error": "<short message>"}`.
 
 | # | Target | Scenario | Expected result | Test file |
 |---|---|---|---|---|
-| 🟡 T-01 | `start_conversation` and the CLI | existing suite | Unchanged behavior | `tests/test_cli.py` |
-| 🟡 T-02 | `handle` GET routes | page, static, traversal, unknown | RF-03 | `tests/test_web.py` |
-| 🟡 T-03 | `/api/state` | Wednesday and Sunday | RF-04 | `tests/test_web.py` |
-| 🟡 T-04 | `/api/chat` | plain turn, tool turn, stored messages | RF-05 | `tests/test_web.py` |
-| 🟡 T-05 | `trace_item` | each tool, redaction, truncation, errors, text results | RF-06, EC-01 | `tests/test_web.py` |
-| 🟡 T-06 | verification and reset | verified then reset | RF-04, RF-07, EC-05 | `tests/test_web.py` |
-| 🟡 T-07 | `/api/handoffs` | ticket from a chat | RF-08 | `tests/test_web.py` |
-| 🟡 T-08 | request validation | content type, size, empty text, routes | RF-09, EC-03 | `tests/test_web.py` |
-| 🟡 T-09 | host and origin checks | spoofed host, foreign origin | RF-10, EC-04 | `tests/test_web.py` |
-| 🟡 T-10 | model failure | a client that raises | RF-11 | `tests/test_web.py` |
-| 🟡 T-11 | real HTTP round trip | server on a free port, `urllib` | RF-02, RF-03 | `tests/test_web.py` |
-| 🟡 T-12 | static files | no external requests, `lang` | RF-12 | `tests/test_web.py` |
-| 🟡 T-13 | `emporio web` | missing key, busy port | exit codes of RF-02 | `tests/test_cli.py` |
+| ✅ T-01 | `start_conversation` and the CLI | existing suite | Unchanged behavior | `tests/test_cli.py` |
+| ✅ T-02 | `handle` GET routes | page, static, traversal, unknown | RF-03 | `tests/test_web.py` |
+| ✅ T-03 | `/api/state` | Wednesday and Sunday | RF-04 | `tests/test_web.py` |
+| ✅ T-04 | `/api/chat` | plain turn, tool turn, stored messages | RF-05 | `tests/test_web.py` |
+| ✅ T-05 | `trace_item` | each tool, redaction, truncation, errors, text results | RF-06, EC-01 | `tests/test_web.py` |
+| ✅ T-06 | verification and reset | verified then reset | RF-04, RF-07, EC-05 | `tests/test_web.py` |
+| ✅ T-07 | `/api/handoffs` | ticket from a chat | RF-08 | `tests/test_web.py` |
+| ✅ T-08 | request validation | content type, size, empty text, routes | RF-09, EC-03 | `tests/test_web.py` |
+| ✅ T-09 | host and origin checks | spoofed host, foreign origin | RF-10, EC-04 | `tests/test_web.py` |
+| ✅ T-10 | model failure | a client that raises | RF-11 | `tests/test_web.py` |
+| ✅ T-11 | real HTTP round trip | server on a free port, `urllib` | RF-02, RF-03 | `tests/test_web.py` |
+| ✅ T-12 | static files | no external requests, `lang` | RF-12 | `tests/test_web.py` |
+| ✅ T-13 | `emporio web` | missing key, busy port | exit codes of RF-02 | `tests/test_cli.py` |
 
 ### Acceptance criterion
 
@@ -173,12 +173,12 @@ Plus the manual pass in a browser described above, in light and dark, at 1280 px
 
 ## Implementation checklist
 
-- [ ] 🟡 `git diff --stat` checked against **Allowed files**
-- [ ] 🟡 Tests written before the code
-- [ ] 🟡 The page injects replies with `textContent`, never `innerHTML` with model output
-- [ ] 🟡 No dependency added; no external request from the page
-- [ ] 🟡 Manual browser pass in both themes at desktop and phone width
-- [ ] 🟡 `ruff check` and `ruff format --check` pass
+- [x] ✅ `git diff --stat` checked against **Allowed files**
+- [x] ✅ Tests written before the code
+- [x] ✅ The page injects replies with `textContent`, never `innerHTML` with model output
+- [x] ✅ No dependency added; no external request from the page
+- [x] ✅ Manual browser pass in both themes at desktop and phone width
+- [x] ✅ `ruff check` and `ruff format --check` pass
 
 ## Open questions
 
@@ -188,6 +188,6 @@ None.
 
 | Rule | Status | Note |
 |---|---|---|
-| The web layer calls the agent; the agent and the domain never import it | 🟡 | |
-| Business errors travel as JSON; infrastructure errors become a short 502 | 🟡 | |
-| Scope respected | 🟡 | |
+| The web layer calls the agent; the agent and the domain never import it | ✅ | |
+| Business errors travel as JSON; infrastructure errors become a short 502 | ✅ | |
+| Scope respected | ✅ | |
