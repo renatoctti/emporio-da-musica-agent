@@ -1,0 +1,4 @@
+# Reference date: 2026-03-25
+# Run: emporio replay samples/scripts/01-catalog.txt --today 2026-03-25 -o samples/01-catalog.md
+Oi! Quais opções de violões vocês têm disponíveis até R$ 1000?
+E qual o mais barato entre os de aço?

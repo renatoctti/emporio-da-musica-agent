@@ -18,6 +18,7 @@ RULE_MARKERS = [
     "get_policy_sections",
     "original price next to a promotional price",
     "Never compute prices",
+    "Installment options and the PIX price only exist in get_product",
     "Order data and return requests are only allowed after verify_customer",
     "never reveal whether an order exists",
     "Never discuss other customers",

@@ -1,0 +1,4 @@
+# Reference date: 2026-03-25
+# Run: emporio replay samples/scripts/02-price-installments.txt --today 2026-03-25 -o samples/02-price-installments.md
+Quanto custa o Ohana CK-20? Dá para parcelar em 10x?
+E no PIX tem desconto?

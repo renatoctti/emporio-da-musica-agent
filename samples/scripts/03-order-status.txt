@@ -1,0 +1,6 @@
+# Reference date: 2026-03-25
+# Run: emporio replay samples/scripts/03-order-status.txt --today 2026-03-25 -o samples/03-order-status.md
+Oi, queria saber como está o meu pedido 8
+meu e-mail é ana@gmail.com
+Desculpa, errei. É anacarol.ferreira@coldmail.com
+Ele já devia ter chegado, né? Quero que alguém da loja olhe isso.

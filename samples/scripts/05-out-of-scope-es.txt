@@ -1,0 +1,4 @@
+# Reference date: 2026-03-25
+# Run: emporio replay samples/scripts/05-out-of-scope-es.txt --today 2026-03-25 -o samples/05-out-of-scope-es.md
+Hola, ¿tienen cuerdas para guitarra y pedales de efectos?
+¿Y a qué hora abren los sábados?

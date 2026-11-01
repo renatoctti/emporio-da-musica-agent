@@ -1,0 +1,5 @@
+# Reference date: 2026-02-19
+# Run: emporio replay samples/scripts/04-return.txt --today 2026-02-19 -o samples/04-return.md
+Oi! Comprei um ukulele e me arrependi, quero devolver.
+O pedido é o 7 e meu e-mail é leticia.rocha@jmail.com
+Sim, pode abrir o pedido de devolução.
