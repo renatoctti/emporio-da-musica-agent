@@ -70,3 +70,77 @@ def test_no_documentation_names_the_tools_used_to_plan_the_work():
     documents += (ROOT / ".specs").rglob("*.md")
     for path in documents:
         assert not HIDDEN.search(path.read_text(encoding="utf-8")), path
+
+
+README_HEADINGS = [
+    "## Overview",
+    "## Quick start",
+    "## Configuration",
+    "## Commands",
+    "## Architecture",
+    "## Decisions and why",
+    "## Data handling",
+    "## Prompt strategy",
+    "## Evaluation",
+    "## Assumptions",
+    "## Limitations and next steps",
+    "## AI coding assistants",
+    "## Sample conversations",
+    "## Repository layout",
+]
+
+
+def readme():
+    return (ROOT / "README.md").read_text(encoding="utf-8")
+
+
+def section(title):
+    text = readme()
+    start = text.index(title)
+    following = [text.index(h, start + 1) for h in README_HEADINGS if text.find(h, start + 1) > 0]
+    return text[start : min(following)] if following else text[start:]
+
+
+def test_readme_has_every_required_section_in_order():
+    text = readme()
+    positions = [text.find(heading) for heading in README_HEADINGS]
+    assert all(p >= 0 for p in positions), [h for h, p in zip(README_HEADINGS, positions) if p < 0]
+    assert positions == sorted(positions)
+
+
+def test_readme_quick_start_is_runnable():
+    quick_start = section("## Quick start")
+    for needle in ('pip install -e ".[dev]"', "LLM_API_KEY", "python -m venv", "pytest"):
+        assert needle in quick_start, needle
+
+
+def test_readme_lists_every_assumption():
+    assumptions = section("## Assumptions")
+    for n in range(1, 14):
+        assert re.search(rf"\bA{n}\b", assumptions), f"A{n}"
+
+
+def test_readme_reports_the_evaluation_of_two_models_honestly():
+    evaluation = section("## Evaluation")
+    assert "claude-haiku-5.5" in evaluation and "qwen" in evaluation
+    assert "21/21" in evaluation and "20/21" in evaluation
+    assert "18/21" in evaluation, "the first run must be reported"
+    assert "held-out" in evaluation
+
+
+def test_readme_states_the_main_limits_plainly():
+    limits = section("## Limitations and next steps").lower()
+    for needle in ("shipping", "holiday", "lexical", "unencrypted", "simulated"):
+        assert needle in limits, needle
+
+
+def test_readme_explains_how_the_assistant_was_used():
+    usage = section("## AI coding assistants")
+    assert "Claude Code" in usage and ".specs" in usage
+    assert "test-first" in usage
+
+
+def test_every_sample_is_linked_from_the_readme():
+    block = section("## Sample conversations")
+    for name in NAMES:
+        assert f"samples/{name}.md" in block

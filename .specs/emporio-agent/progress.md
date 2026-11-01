@@ -20,7 +20,7 @@
 | 08-agent-loop | 🟢 Done | 51 tests |
 | 09-cli | 🟢 Done | 28 tests |
 | 10-routing-eval | 🟢 Done | 20 tests; live runs: claude-haiku-5.5 21/21, qwen3.7-flash 20/21 |
-| 11-samples-readme | 🔴 Not started | |
+| 11-samples-readme | 🟢 Done | 21 structure tests; clean-venv install verified |
 
 > Legend: 🔴 not started · 🟡 in progress · 🟢 done · ❌ blocked
 
@@ -96,12 +96,22 @@
 - The first sample transcript for installments showed the model working out the 10x limit itself instead of calling `get_product`; the prompt now says installments and the PIX price exist only there.
 - Final runs with the final prompt: `claude-haiku-5.5` 21/21 (160k in, 7k out, about US$ 0.02) and `qwen/qwen3.7-flash` 20/21 (109k in, 10k out, about US$ 0.005); the cheaper model fails E18 (English question answered in Portuguese). Reports in `evals/results/`.
 - The cases and the prompt were adjusted after seeing results, so these numbers are not a held-out measurement.
+### 2026-10-31: spec 11, samples and README
+
+- Five sample conversations generated with `emporio replay` (scripts in `samples/scripts`), each against a fresh database; transcripts and index in `samples/`.
+- README written: quick start (verified in a clean virtual environment: install, `emporio --help`, 310 tests passing), configuration, commands, architecture, decisions with the alternatives rejected, data handling, prompt strategy, evaluation with both models and the history of the first run, assumptions A1 to A13, limitations, AI assistant usage, samples and layout.
+- 21 structure tests over scripts, transcripts and the README, plus a guard that no document names the tools used to plan the work.
+
 ---
 
 ## Decisions made during implementation
 
 | Decision | Spec | Rationale |
 |---|---|---|
+| The README does not claim that the author reviewed every commit | 11 | The assistant cannot know it happened; the AI section describes the workflow and the mistakes found instead. | 
+| The Spanish sample test checks intent (Spanish, mentions instruments, no tool call) instead of an exact word | 11 | The first version pinned a word from a model reply, which changes on every generation. |
+| The transcripts were regenerated with a fresh database each | 11 | A reused database made sample 04 reuse an older ticket (duplicate detection working, but a confusing example). |
+| `PROJECT_MAP.md` rewritten after the implementation | 11 | It still described the stack as decided but not built. |
 | Case E08 expects `get_order_status` instead of both `verify_customer` and `get_order_status` | 10 | `expect_tools_any` means at least one; the order tool refuses to answer without a verification, so calling it implies the verification happened. |
 | Number parsing is split: tool results are read as JSON (dot decimal), customer text as Brazilian format | 10 | A single pattern read 439.2 as 439; a unit test caught it. |
 | `python -m emporio.evals` lives in `evals/__main__.py` | 10 | That is the file Python runs for `-m`; the spec listed it as the command line module. |
