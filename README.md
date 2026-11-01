@@ -90,7 +90,7 @@ customers from the provided data to try the identity check.
 
 - A system, light and dark theme control, remembered in the browser. Both themes are designed
   separately and the text keeps AA contrast in each.
-- On a phone-sized screen the panel becomes a drawer.
+- The side panel can be collapsed, with the button in the header or the X inside it, and the choice is remembered; clicking the label under a reply opens it again. On a phone-sized screen it is a drawer.
 - No external request and no extra dependency: a standard-library server and a page of plain HTML,
   CSS and JavaScript, so it also works offline.
 - It listens on `127.0.0.1` only and refuses requests whose host or origin is not local, because it

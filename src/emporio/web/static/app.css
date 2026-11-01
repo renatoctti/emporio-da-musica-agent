@@ -145,6 +145,7 @@ h1, h2, h3, p, ul, ol, dl, dd { margin: 0; }
   font-size: 13.5px; font-weight: 500; transition: background 0.12s, border-color 0.12s;
 }
 .btn:hover { background: var(--subtle); border-color: var(--line-strong); }
+.btn[aria-expanded="true"] { background: var(--subtle); border-color: var(--line-strong); }
 .btn-primary { border-color: var(--accent); background: var(--accent); color: var(--on-accent); font-weight: 600; }
 .btn-primary:hover { background: var(--accent); border-color: var(--accent); filter: brightness(1.1); }
 .btn .icon { display: none; }
@@ -312,6 +313,12 @@ dialog::backdrop { background: rgb(8 14 20 / 0.5); }
 .tester .btn { margin-top: 10px; }
 
 .backdrop { position: fixed; inset: 0; z-index: 20; background: rgb(8 14 20 / 0.5); }
+
+/* ---- wide screens: the panel can be collapsed and the chat takes the whole width ---- */
+@media (min-width: 901px) {
+  body[data-panel="closed"] .layout { grid-template-columns: minmax(0, 1fr); }
+  body[data-panel="closed"] .side { display: none; }
+}
 
 /* ---- narrow screens: the panel becomes a drawer ---- */
 @media (max-width: 900px) {

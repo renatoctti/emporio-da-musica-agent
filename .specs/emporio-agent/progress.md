@@ -115,6 +115,11 @@
 - Only styling and a few markup details changed, no component was removed: neutral white and one accent (the store's navy), system sans only, 1 px borders and small radii, no shadows. Tool kinds are a colored dot beside the name, the avatar is a plain circle, the brand is a wordmark with a line-art note, "Enviar" is a text button, the suggestions are rows instead of cards and the panel is a thin timeline.
 - Contrast was computed for every text pair in both themes: the lowest is 5.04:1 (AA needs 4.5:1).
 - Checked again in Chrome (desktop, both themes, a real conversation) and at 500 px; the screenshots in `docs/` were retaken.
+### 2026-11-01: spec 12, collapsible panel
+
+- Added at the author's request: the side panel can be collapsed and expanded at any width, with a button in the header and an X inside the panel. On a wide screen the choice is saved in the browser and the chat takes the whole width; under 900 px it stays a drawer that always starts closed, and the dimmed backdrop appears only there. Clicking the label under a reply opens the panel again. Escape closes the drawer only on a narrow screen.
+- Written test-first (a static check that the controls are not narrow-only and the choice is stored), but that test only reads the files. The behavior was checked in Chrome by running the page: default open, collapse and reopen from both buttons, Escape ignored on a wide screen, the choice surviving a reload, and the label under a reply reopening the panel.
+- A slip worth recording: a PowerShell array literal dropped one of my edits (the comma binds tighter than `+`), which left two variables undeclared in the page script and the static test still green. The page was caught in the browser, not by the suite; the JavaScript still has no unit tests.
 ---
 
 ## Decisions made during implementation

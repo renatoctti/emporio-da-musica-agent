@@ -44,7 +44,7 @@
         <button type="button" data-theme-choice="dark" aria-pressed="false" aria-label="Tema escuro" title="Tema escuro"><svg class="icon"><use href="#i-moon"/></svg></button>
       </div>
       <button class="btn btn-primary" id="btn-new" type="button" aria-label="Nova conversa" title="Nova conversa"><svg class="icon"><use href="#i-plus"/></svg><span class="btn-label">Nova conversa</span></button>
-      <button class="btn only-narrow" id="btn-panel" type="button" aria-expanded="false" aria-controls="side" aria-label="Como decidiu" title="Como a Melô decidiu"><svg class="icon"><use href="#i-panel"/></svg><span class="btn-label">Como decidiu</span><span class="badge" id="trace-count" hidden>0</span></button>
+      <button class="btn" id="btn-panel" type="button" aria-expanded="true" aria-controls="side" aria-label="Como decidiu" title="Mostrar ou recolher o painel Como a Melô decidiu"><svg class="icon"><use href="#i-panel"/></svg><span class="btn-label">Como decidiu</span><span class="badge" id="trace-count" hidden>0</span></button>
     </div>
   </header>
 
@@ -55,7 +55,7 @@
           <section class="hero" id="hero">
             <p class="eyebrow">Atendimento virtual</p>
             <h2 class="hero-title">Como posso ajudar?</h2>
-            <p class="hero-text">Consulto o catálogo, o manual de políticas e os pedidos, e chamo uma pessoa da equipe quando preciso. No painel ao lado você vê como cada resposta foi decidida.</p>
+            <p class="hero-text">Consulto o catálogo, o manual de políticas e os pedidos, e chamo uma pessoa da equipe quando preciso. No painel Como decidiu, você vê o caminho de cada resposta.</p>
             <ul class="suggestions" id="suggestions"></ul>
           </section>
           <div class="log" id="log" role="log" aria-live="polite" aria-label="Mensagens"></div>
@@ -80,7 +80,7 @@
           <button type="button" role="tab" id="tab-trace" aria-selected="true" aria-controls="pane-trace">Como a Melô decidiu</button>
           <button type="button" role="tab" id="tab-store" aria-selected="false" aria-controls="pane-store" tabindex="-1">Painel da loja<span class="badge" id="ticket-count" hidden>0</span></button>
         </div>
-        <button class="icon-btn only-narrow" id="btn-close" type="button" aria-label="Fechar painel"><svg class="icon"><use href="#i-close"/></svg></button>
+        <button class="icon-btn" id="btn-close" type="button" aria-label="Recolher painel" title="Recolher painel"><svg class="icon"><use href="#i-close"/></svg></button>
       </div>
       <div class="pane" id="pane-trace" role="tabpanel" aria-labelledby="tab-trace">
         <p class="pane-intro">Cada resposta é montada com ferramentas do sistema. Estas são as consultas, na ordem em que aconteceram.</p>

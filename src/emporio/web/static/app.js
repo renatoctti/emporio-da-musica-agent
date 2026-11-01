@@ -9,6 +9,8 @@
     handoff: "Atendimento · equipe humana",
   };
   var THEME_KEY = "emporio-theme";
+  var PANEL_KEY = "emporio-panel";
+  var narrowQuery = window.matchMedia("(max-width: 900px)");
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var app = { info: null, turns: [], busy: false };
 
@@ -304,11 +306,26 @@
     });
   }
 
-  function openPanel(open) {
+  function readSaved(key) {
+    try { return localStorage.getItem(key); } catch (error) { return null; }
+  }
+
+  // On a wide screen the panel is a column that can be collapsed (and the choice is remembered);
+  // on a narrow one it is a drawer that always starts closed.
+  function openPanel(open, remember) {
     document.body.dataset.panel = open ? "open" : "closed";
     $("#btn-panel").setAttribute("aria-expanded", String(open));
-    $("#backdrop").hidden = !open;
-    if (open && window.matchMedia("(max-width: 900px)").matches) $("#tab-trace").focus();
+    $("#backdrop").hidden = !(open && narrowQuery.matches);
+    if (remember !== false && !narrowQuery.matches) {
+      try { localStorage.setItem(PANEL_KEY, open ? "open" : "closed"); } catch (error) { /* the choice then lasts until the page closes */ }
+    }
+    if (open && narrowQuery.matches) $("#tab-trace").focus();
+  }
+
+  function initPanel() {
+    var apply = function () { openPanel(narrowQuery.matches ? false : readSaved(PANEL_KEY) !== "closed", false); };
+    apply();
+    narrowQuery.addEventListener("change", apply);
   }
 
   function applyTheme(choice) {
@@ -342,7 +359,7 @@
     $("#btn-panel").addEventListener("click", function () { openPanel(document.body.dataset.panel !== "open"); });
     $("#btn-close").addEventListener("click", function () { openPanel(false); $("#btn-panel").focus(); });
     $("#backdrop").addEventListener("click", function () { openPanel(false); });
-    document.addEventListener("keydown", function (event) { if (event.key === "Escape" && document.body.dataset.panel === "open") openPanel(false); });
+    document.addEventListener("keydown", function (event) { if (event.key === "Escape" && narrowQuery.matches && document.body.dataset.panel === "open") openPanel(false); });
     $("#tab-trace").addEventListener("click", function () { setTab("trace"); });
     $("#tab-store").addEventListener("click", function () { setTab("store"); refreshTickets(); });
     $(".tabs").addEventListener("keydown", function (event) {
@@ -361,7 +378,7 @@
     var saved = null;
     try { saved = localStorage.getItem(THEME_KEY); } catch (error) { saved = null; }
     applyTheme(saved === "light" || saved === "dark" ? saved : "system");
-    document.body.dataset.panel = "closed";
+    initPanel();
     bind();
     updateSend();
     api("/api/state").then(applyInfo).catch(function (error) {

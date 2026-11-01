@@ -558,3 +558,16 @@ def test_the_real_server_answers_over_http_on_a_free_local_port():
     assert seen["page"][0] == 200 and "Melô".encode() in seen["page"][1]
     assert seen["reply"] == "Olá! Sou a Melô."
     assert seen["refused"] == 403
+
+
+def test_the_side_panel_can_be_collapsed_at_every_width():
+    html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+    script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+    sheet = (STATIC_DIR / "app.css").read_text(encoding="utf-8")
+    # the controls exist on every width (they used to be marked as narrow-only)
+    assert "only-narrow" not in html
+    assert 'id="btn-panel"' in html and 'aria-expanded="true"' in html
+    assert 'aria-label="Recolher painel"' in html
+    # the choice is remembered, and the page collapses on wide screens too
+    assert "emporio-panel" in script
+    assert 'body[data-panel="closed"] .side' in sheet
