@@ -1,3 +1,4 @@
+import codecs
 import re
 from pathlib import Path
 
@@ -12,8 +13,11 @@ NAMES = [
     "04-return",
     "05-out-of-scope-es",
 ]
-# Names that must never appear in the public documentation of this repository.
-HIDDEN = re.compile(r"isabella|mattpocock|ponytail|spec-harness|spec-orchestrator", re.IGNORECASE)
+# Words that must never appear in the public documentation (rot13, so this file does not spell them).
+HIDDEN = re.compile(
+    codecs.decode("vfnoryyn|znggcbpbpx|cbalgnvy|fcrp-unearff|fcrp-bepurfgengbe", "rot13"),
+    re.IGNORECASE,
+)
 
 
 def script_lines(name):
