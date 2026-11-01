@@ -14,8 +14,8 @@
 | 02-pricing | 🟢 Done | 30 tests |
 | 03-catalog | 🟢 Done | 23 tests |
 | 04-policy-retrieval | 🟢 Done | 14 tests |
-| 05-persistence | 🟢 Done | 14 tests |
-| 06-customer-orders | 🔴 Not started | |
+| 05-persistence | 🟢 Done | 13 tests |
+| 06-customer-orders | 🟢 Done | 26 tests |
 | 07-returns-handoff | 🔴 Not started | |
 | 08-agent-loop | 🔴 Not started | |
 | 09-cli | 🔴 Not started | |
@@ -56,7 +56,13 @@
 ### 2026-10-31: spec 05, persistence
 
 - Added `db.py`: SQLite connection with the schema created on connect, `SessionStore` (messages stored as JSON in OpenAI format) and `HandoffStore` (protocol built from the row id in the same transaction).
-- 14 new tests, including reconnecting to the same file, foreign keys with rollback and ticket protocol numbering.
+- 13 new tests, including reconnecting to the same file, foreign keys with rollback and ticket protocol numbering.
+
+### 2026-10-31: spec 06, customer verification and orders
+
+- Added `session.py` (`SessionState`) and `orders.py`: `verify_customer`, `get_order_status`, `list_my_orders` and the shared `require_owned_order`.
+- Verification compares the e-mail or phone with the customer who owns the order (the e-mail shared by customers 11 and 43 never crosses orders); wrong contact and unknown order give identical answers; three failures lock the session.
+- 26 new tests on the real data.
 
 ---
 
@@ -64,3 +70,4 @@
 
 | Decision | Spec | Rationale |
 |---|---|---|
+| Exposed `require_owned_order(data, state, order_id)` from `orders.py` | 06 | Spec 07 needs the same ownership rule; reusing it avoids a second copy of the check that decides who may see an order. |
