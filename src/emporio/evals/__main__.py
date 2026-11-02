@@ -53,6 +53,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     calls = sum(len(r.tool_names) for r in results)
     print(f"\n{passed}/{len(results)} passed, {calls} tool calls, model {settings.llm_model}")
     print(f"tokens: {client.usage['prompt_tokens']} in, {client.usage['completion_tokens']} out")
+    mean_latency = sum(r.latency_ms for r in results) / len(results) if results else 0
+    print(f"mean latency per case: {mean_latency:.0f} ms")
 
     if args.report:
         report = {
@@ -62,6 +64,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "total": len(results),
             "tool_calls": calls,
             "usage": client.usage,
+            "mean_latency_ms": round(mean_latency),
             "cases": [
                 {
                     "id": r.case_id,
@@ -69,6 +72,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "failures": r.failures,
                     "tools": r.tool_names,
                     "replies": r.replies,
+                    "latency_ms": r.latency_ms,
+                    "prompt_tokens": r.prompt_tokens,
+                    "completion_tokens": r.completion_tokens,
                 }
                 for r in results
             ],

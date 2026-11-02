@@ -21,11 +21,12 @@ from emporio.conversation import start_conversation
 from emporio.data import load_store_data
 from emporio.db import HandoffStore, SessionStore, UnknownSessionError, connect
 from emporio.llm import ChatClient, MissingApiKeyError, OpenAIChatClient
+from emporio.metrics import Prices, format_summary, summarize
 from emporio.policies import load_policy_sections
 from emporio.web.app import WebApp
 from emporio.web.server import make_server
 
-COMMANDS = ("chat", "sessions", "handoffs", "export", "replay", "data-report", "web")
+COMMANDS = ("chat", "sessions", "handoffs", "export", "replay", "data-report", "web", "stats")
 EXIT_WORDS = frozenset({"sair", "exit", "quit"})
 POLICY_FILE = "políticas_da_loja.pdf"
 DEFAULT_WEB_PORT = 8765
@@ -52,6 +53,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     commands.add_parser("sessions", help="list stored conversations")
     commands.add_parser("handoffs", help="list open handoff tickets")
+    stats = commands.add_parser("stats", help="latency, tokens and cost of the answers")
+    stats.add_argument("--session", metavar="SESSION_ID", help="only this conversation")
     commands.add_parser("data-report", help="list the data issues found in the CSV files")
 
     export = commands.add_parser("export", help="print a conversation as Markdown")
@@ -139,7 +142,7 @@ def run_chat(
         if text.lower() in EXIT_WORDS:
             break
         turn = reply(history, text)
-        store.append_messages(session_id, turn.new_messages, datetime.now())
+        store.append_messages(session_id, turn.new_messages, datetime.now(), turn.metrics)
         history.extend(turn.new_messages)
         write(f"Melô: {turn.reply}")
     write(f"Conversa {session_id} salva. Para retomar: emporio chat --resume {session_id}")
@@ -218,7 +221,7 @@ def _cmd_replay(
     history: list[dict[str, Any]] = []
     for text in messages:
         turn = reply(history, text)
-        sessions.append_messages(session_id, turn.new_messages, datetime.now())
+        sessions.append_messages(session_id, turn.new_messages, datetime.now(), turn.metrics)
         history.extend(turn.new_messages)
 
     return _write_transcript(export_markdown(sessions, session_id), args.output, write)
@@ -259,6 +262,20 @@ def _cmd_handoffs(settings: Settings, write: Callable[[str], None]) -> int:
             f"{ticket.protocol:<19}{ticket.category:<16}{ticket.due_at:%Y-%m-%d %H:%M}  "
             f"{order:<7}{ticket.summary[:60]}"
         )
+    return 0
+
+
+def _cmd_stats(args: argparse.Namespace, settings: Settings, write: Callable[[str], None]) -> int:
+    store = SessionStore(connect(settings.db_path))
+    if args.session:
+        store.get_session(args.session)  # raises UnknownSessionError for an unknown id
+    turns = store.all_turn_metrics(args.session)
+    if not turns:
+        write("No metrics yet.")
+        return 0
+    prices = Prices(settings.price_in_per_m, settings.price_out_per_m)
+    for line in format_summary(summarize(turns, prices)):
+        write(line)
     return 0
 
 
@@ -333,6 +350,8 @@ def main(
             return _cmd_sessions(settings, write)
         if args.command == "handoffs":
             return _cmd_handoffs(settings, write)
+        if args.command == "stats":
+            return _cmd_stats(args, settings, write)
         if args.command == "export":
             return _cmd_export(args, settings, write)
         return _cmd_data_report(settings, write)

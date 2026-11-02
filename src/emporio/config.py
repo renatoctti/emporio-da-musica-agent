@@ -33,12 +33,27 @@ class Settings:
     simulated: bool = False  # true when EMPORIO_TODAY fixes the date
     embedding_model: str = DEFAULT_EMBEDDING_MODEL
     use_embeddings: bool = False  # needs an API key and EMPORIO_EMBEDDINGS not set to off
+    price_in_per_m: float | None = None  # USD per million prompt tokens, when known
+    price_out_per_m: float | None = None  # USD per million completion tokens, when known
 
 
 def _read(env: Mapping[str, str], key: str) -> str | None:
     """Value of `key`, with blank strings treated as unset (`.env.example` ships blanks)."""
     value = env.get(key, "").strip()
     return value or None
+
+
+def _price(env: Mapping[str, str], key: str) -> float | None:
+    text = _read(env, key)
+    if text is None:
+        return None
+    try:
+        value = float(text)
+    except ValueError as exc:
+        raise ConfigError(f"{key} must be a number (USD per million tokens), got {text!r}") from exc
+    if value < 0:
+        raise ConfigError(f"{key} must not be negative, got {text!r}")
+    return value
 
 
 def load_settings(env: Mapping[str, str] | None = None) -> Settings:
@@ -64,6 +79,8 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         embedding_model=_read(env, "EMBEDDING_MODEL") or DEFAULT_EMBEDDING_MODEL,
         use_embeddings=bool(_read(env, "LLM_API_KEY"))
         and (_read(env, "EMPORIO_EMBEDDINGS") or "auto").lower() != "off",
+        price_in_per_m=_price(env, "LLM_PRICE_IN_PER_M"),
+        price_out_per_m=_price(env, "LLM_PRICE_OUT_PER_M"),
         now=now,
         today=now.date(),
         simulated=today_text is not None,

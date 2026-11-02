@@ -23,6 +23,7 @@
 | 11-samples-readme | 🟢 Done | 21 structure tests; clean-venv install verified |
 | 12-web-interface | 🟢 Done | 57 tests; manual pass in Chrome (desktop and a 390 px frame, both themes) |
 | 13-policy-search | 🟢 Done | 34-question gold set; BM25 recall@3 0.85, embeddings 0.97, hybrid 0.97 |
+| 14-turn-metrics | 🟢 Done | metrics table, emporio stats, web and eval fields; 396 tests |
 
 > Legend: 🔴 not started · 🟡 in progress · 🟢 done · ❌ blocked
 
@@ -136,12 +137,23 @@
 - Test first: tests/test_retrieval.py was written before the module. One expectation was wrong (BM25 only returns sections with a positive score, so a narrow query returns one hit, not two); the test was fixed, not the code. Ruff removed two unused noqa comments.
 - Rule 3 of the prompt now tells the model to call search_policies when it does not know the section. The live agent evaluation has not been rerun for this change; it runs once, after the last change of this round.
 
+### 2026-11-02: spec 14, per-turn metrics
+
+- Every answer is now measured: wall time of the turn, model calls, tool calls and the token difference of the client counter. Nothing about message text is stored.
+- The numbers are saved in a new table, turn_metrics, in the same transaction as the messages. A database created before this spec gets the table when it is opened. The new command emporio stats [--session ID] prints turns, tool calls per turn, latency (mean, median, p95), tokens and an estimated cost.
+- The cost is only computed when LLM_PRICE_IN_PER_M and LLM_PRICE_OUT_PER_M are set. The project does not know the price of the model, so it says "not configured" instead of guessing.
+- The web chat endpoint returns the metrics of the turn and the state returns them for every turn, so a reload keeps them. The evaluation report has latency and tokens per case and the mean latency; the panel that shows them comes with the interface redesign.
+- Test first: tests/test_metrics.py came before the code. One existing web test compared the turns of the state with an exact dictionary and had to gain the new metrics key, which is the change the spec asks for. Ruff asked for a default factory on the AgentTurn field and for an instance attribute in a test helper.
+
 ---
 
 ## Decisions made during implementation
 
 | Decision | Spec | Rationale |
 |---|---|---|
+| Cost in dollars is optional and comes from two environment variables | 14 | The model price is not in the data and changes; a wrong number printed as fact would be worse than "not configured". |
+| Latency is the wall time of the whole turn, not only the model time | 14 | It is what the customer waits for; tool time is tiny here and one number is easier to read. |
+| Token counts come from the client counter by difference, and fake clients count as zero | 14 | Avoids changing the ChatClient protocol and every test double. |
 | Hybrid search stays the default although embeddings alone scored slightly higher on this gold set | 13 | BM25 protects exact terms a vector can blur; 34 questions are too few to prove the difference, and tuning the weight on them would only fit the test. |
 | The vector cache lives in var/ and is not committed | 13 | It is derived data and var/ is ignored; the evaluation result file in evals/results is what the repository keeps. |
 | No external vector database | 13 | It would need an account and a key and break the offline run; the Embedder protocol is the seam where one would plug in. |

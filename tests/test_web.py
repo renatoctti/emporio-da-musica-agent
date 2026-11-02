@@ -183,8 +183,12 @@ def test_a_tool_turn_returns_the_trace_and_the_state_rebuilds_it_after_a_reload(
             "user": "Quanto custa o Takamine GD20?",
             "reply": result["reply"],
             "trace": result["trace"],
+            "metrics": result["metrics"],
         }
     ]
+    # one tool round plus the final answer: two model calls, one tool call, no price configured
+    assert (result["metrics"]["model_calls"], result["metrics"]["tool_calls"]) == (2, 1)
+    assert result["metrics"]["cost_usd"] is None
 
 
 def test_several_tool_calls_in_one_turn_keep_their_order():

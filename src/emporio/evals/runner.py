@@ -35,6 +35,9 @@ class CaseResult:
     failures: list[str]
     replies: list[str]
     tool_names: list[str]
+    latency_ms: int = 0
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
 
 
 def _brazilian_number(text: str) -> float:
@@ -95,7 +98,16 @@ def evaluate_case(case: EvalCase, turns: Sequence[AgentTurn]) -> CaseResult:
         for amount in grounded_prices(turn.reply, results_so_far, " ".join(user_text_so_far)):
             failures.append(f"price {amount} did not come from a tool result")
 
-    return CaseResult(case.id, not failures, failures, replies, tool_names)
+    return CaseResult(
+        case.id,
+        not failures,
+        failures,
+        replies,
+        tool_names,
+        latency_ms=sum(turn.metrics.latency_ms for turn in turns),
+        prompt_tokens=sum(turn.metrics.prompt_tokens for turn in turns),
+        completion_tokens=sum(turn.metrics.completion_tokens for turn in turns),
+    )
 
 
 @lru_cache(maxsize=2)

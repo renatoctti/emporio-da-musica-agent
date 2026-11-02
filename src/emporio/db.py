@@ -15,6 +15,8 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
+from emporio.metrics import TurnMetrics
+
 HANDOFF_CATEGORIES: tuple[str, ...] = ("complaint", "return_request", "defect", "other")
 
 _SCHEMA = """
@@ -42,6 +44,18 @@ CREATE TABLE IF NOT EXISTS handoffs (
     created_at TEXT NOT NULL,
     due_at TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'open'
+);
+CREATE TABLE IF NOT EXISTS turn_metrics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT NOT NULL REFERENCES sessions(id),
+    turn_index INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    latency_ms INTEGER NOT NULL,
+    model_calls INTEGER NOT NULL,
+    tool_calls INTEGER NOT NULL,
+    prompt_tokens INTEGER NOT NULL,
+    completion_tokens INTEGER NOT NULL,
+    UNIQUE (session_id, turn_index)
 );
 """
 
@@ -109,6 +123,16 @@ def _session_info(row: sqlite3.Row) -> SessionInfo:
     )
 
 
+def _turn_metrics(row: sqlite3.Row) -> TurnMetrics:
+    return TurnMetrics(
+        latency_ms=row["latency_ms"],
+        model_calls=row["model_calls"],
+        tool_calls=row["tool_calls"],
+        prompt_tokens=row["prompt_tokens"],
+        completion_tokens=row["completion_tokens"],
+    )
+
+
 class SessionStore:
     def __init__(self, conn: sqlite3.Connection) -> None:
         self._conn = conn
@@ -141,16 +165,42 @@ class SessionStore:
             )
 
     def append_messages(
-        self, session_id: str, messages: Sequence[dict[str, Any]], now: datetime
+        self,
+        session_id: str,
+        messages: Sequence[dict[str, Any]],
+        now: datetime,
+        metrics: TurnMetrics | None = None,
     ) -> None:
-        """Store a whole turn in one transaction: every message is saved or none is."""
+        """Store a whole turn in one transaction: every message (and its metrics) or none."""
         self._require(session_id)
         rows = [(session_id, _stamp(now), json.dumps(m, ensure_ascii=False)) for m in messages]
         with self._conn:
+            # The turn index is the number of customer messages stored before this turn.
+            turn_index = self._conn.execute(
+                "SELECT COUNT(*) FROM messages WHERE session_id = ?"
+                " AND json_extract(message_json, '$.role') = 'user'",
+                (session_id,),
+            ).fetchone()[0]
             self._conn.executemany(
                 "INSERT INTO messages (session_id, created_at, message_json) VALUES (?, ?, ?)",
                 rows,
             )
+            if metrics is not None:
+                self._conn.execute(
+                    "INSERT INTO turn_metrics (session_id, turn_index, created_at, latency_ms,"
+                    " model_calls, tool_calls, prompt_tokens, completion_tokens)"
+                    " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        session_id,
+                        turn_index,
+                        _stamp(now),
+                        metrics.latency_ms,
+                        metrics.model_calls,
+                        metrics.tool_calls,
+                        metrics.prompt_tokens,
+                        metrics.completion_tokens,
+                    ),
+                )
 
     def load_messages(self, session_id: str) -> list[dict[str, Any]]:
         self._require(session_id)
@@ -158,6 +208,23 @@ class SessionStore:
             "SELECT message_json FROM messages WHERE session_id = ? ORDER BY id", (session_id,)
         )
         return [json.loads(row["message_json"]) for row in rows]
+
+    def load_turn_metrics(self, session_id: str) -> dict[int, TurnMetrics]:
+        """Metrics of a conversation by turn index (turns stored before spec 14 have none)."""
+        self._require(session_id)
+        rows = self._conn.execute(
+            "SELECT * FROM turn_metrics WHERE session_id = ? ORDER BY turn_index", (session_id,)
+        )
+        return {row["turn_index"]: _turn_metrics(row) for row in rows}
+
+    def all_turn_metrics(self, session_id: str | None = None) -> list[TurnMetrics]:
+        if session_id is None:
+            rows = self._conn.execute("SELECT * FROM turn_metrics ORDER BY id")
+        else:
+            rows = self._conn.execute(
+                "SELECT * FROM turn_metrics WHERE session_id = ? ORDER BY id", (session_id,)
+            )
+        return [_turn_metrics(row) for row in rows]
 
     def get_session(self, session_id: str) -> SessionInfo:
         row = self._conn.execute(_SESSION_QUERY + " WHERE s.id = ?", (session_id,)).fetchone()

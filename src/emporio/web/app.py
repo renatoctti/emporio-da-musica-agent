@@ -23,6 +23,7 @@ from emporio.data import StoreData, load_store_data
 from emporio.db import HandoffStore, SessionStore, connect
 from emporio.hours import STORE_HOURS, is_open, next_opening
 from emporio.llm import ChatClient
+from emporio.metrics import Prices, as_dict
 from emporio.policies import PolicySection, load_policy_sections
 from emporio.prompt import STORE_ADDRESS, STORE_EMAIL, STORE_PHONE, WEEKDAYS
 
@@ -407,6 +408,9 @@ class WebApp:
             return _json(200, {"session_id": self.session_id, "verified": None})
         return self._chat(payload)
 
+    def _prices(self) -> Prices:
+        return Prices(self.settings.price_in_per_m, self.settings.price_out_per_m)
+
     # --- chat
 
     def _chat(self, payload: dict[str, Any]) -> Response:
@@ -421,13 +425,16 @@ class WebApp:
         except Exception:  # shown to the person as a short message; the details go to the log
             log.exception("model call failed")
             return _error(502, "A Melô não conseguiu responder agora. Tente de novo em instantes.")
-        self.sessions.append_messages(self.session_id, turn.new_messages, datetime.now())
+        self.sessions.append_messages(
+            self.session_id, turn.new_messages, datetime.now(), turn.metrics
+        )
         self._history.extend(turn.new_messages)
         return _json(
             200,
             {
                 "reply": turn.reply,
                 "trace": [trace_item(c.name, c.arguments, c.result) for c in turn.tool_calls],
+                "metrics": as_dict(turn.metrics, self._prices()),
                 "verified": self.verified(),
                 "handoffs_open": len(self.handoffs.list_open()),
             },
@@ -446,9 +453,18 @@ class WebApp:
     def turns(self) -> list[dict[str, Any]]:
         turns: list[dict[str, Any]] = []
         calls: dict[str, dict[str, str]] = {}
+        stored = self.sessions.load_turn_metrics(self._session_id) if self._session_id else {}
         for message in self._history:
             if message["role"] == "user":
-                turns.append({"user": message["content"], "reply": "", "trace": []})
+                found = stored.get(len(turns))
+                turns.append(
+                    {
+                        "user": message["content"],
+                        "reply": "",
+                        "trace": [],
+                        "metrics": as_dict(found, self._prices()) if found else None,
+                    }
+                )
                 calls = {}
             elif message["role"] == "assistant":
                 for call in message.get("tool_calls", []):
