@@ -577,10 +577,13 @@ def test_a_collapsed_panel_leaves_a_visible_tab_and_the_button_has_an_icon():
     html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
     script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
     sheet = (STATIC_DIR / "app.css").read_text(encoding="utf-8")
-    assert 'id="panel-tab"' in html and 'id="panel-tab-count"' in html
+    assert 'id="panel-tab"' in html
+    assert (
+        "badge" not in html + script + sheet
+    )  # no counters on the button, the tab or the panel tabs
     assert (
         'class="pane-fill"' in html
     )  # the icon of the header button, inline so the CSS reaches it
     assert ".panel-tab" in sheet and 'body[data-panel="closed"] .panel-tab' in sheet
     assert '[aria-expanded="false"] .pane-fill' in sheet
-    assert "#panel-tab" in script and "panel-tab-count" in script
+    assert "#panel-tab" in script

@@ -205,11 +205,6 @@
     list.replaceChildren();
     app.turns.forEach(function (turn, index) { list.append(traceTurn(turn, index)); });
     $("#trace-empty").hidden = app.turns.length > 0;
-    var total = app.turns.reduce(function (sum, turn) { return sum + turn.trace.length; }, 0);
-    ["#trace-count", "#panel-tab-count"].forEach(function (selector) {
-      $(selector).hidden = total === 0;
-      $(selector).textContent = String(total);
-    });
   }
 
   function focusTurn(index) {
@@ -260,8 +255,6 @@
           h("p", { class: "ticket-summary", text: ticket.summary }), h("p", { class: "ticket-meta", text: meta })));
       });
       $("#tickets-empty").hidden = data.tickets.length > 0;
-      $("#ticket-count").hidden = data.tickets.length === 0;
-      $("#ticket-count").textContent = String(data.tickets.length);
     });
   }
 

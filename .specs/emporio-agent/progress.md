@@ -150,5 +150,9 @@
 
 ### 2026-11-01: spec 12, visible way to open the panel
 
-- Added at the author's request, because it was not clear that the Como decidiu button opens a side panel. The button now carries a side-panel icon whose right pane is filled while the panel is open and empty while it is collapsed, and it takes the accent color when collapsed. On a wide screen a collapsed panel also leaves a vertical tab on the right edge of the window, with an arrow, the words Como decidiu and the number of lookups; clicking it reopens the panel and moves focus into it.
+- Added at the author's request, because it was not clear that the Como decidiu button opens a side panel. The button now carries a side-panel icon whose right pane is filled while the panel is open and empty while it is collapsed, and it takes the accent color when collapsed. On a wide screen a collapsed panel also leaves a vertical tab on the right edge of the window, with an arrow, and the words Como decidiu; clicking it reopens the panel and moves focus into it.
 - Test-first again, with the same limit: the new test only reads the files. Checked in Chrome in both themes: the tab and the icon states, the click on the tab, focus landing on the first tab of the panel, no console errors. The screenshots in docs/ were retaken because the header now shows the button.
+
+### 2026-11-01: spec 12, counters removed
+
+- Removed at the author's request: the numbers on the Como decidiu button (lookups) and on the Painel da loja tab (tickets), and the matching one on the collapsed tab. They read as unread notifications, which they are not. The header button keeps its side-panel icon.

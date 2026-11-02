@@ -161,10 +161,6 @@ h1, h2, h3, p, ul, ol, dl, dd { margin: 0; }
 .seg button + button { border-left: 1px solid var(--line); }
 .seg button:hover { color: var(--ink); }
 .seg button[aria-pressed="true"] { background: var(--subtle); color: var(--ink); }
-.badge {
-  display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-left: 6px; padding: 0 6px;
-  border-radius: 10px; background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 600;
-}
 
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; min-height: 0; }
 .chat { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
@@ -332,7 +328,6 @@ dialog::backdrop { background: rgb(8 14 20 / 0.5); }
   }
   body[data-panel="closed"] .panel-tab:hover { background: var(--subtle); }
   .panel-tab-label { writing-mode: vertical-rl; letter-spacing: 0.02em; }
-  .panel-tab .badge { margin-left: 0; }
 }
 
 /* ---- narrow screens: the panel becomes a drawer ---- */
