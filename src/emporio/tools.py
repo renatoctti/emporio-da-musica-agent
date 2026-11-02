@@ -14,17 +14,19 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from emporio import catalog, handoff, orders, policies, returns
+from emporio import catalog, handoff, orders, policies, retrieval, returns
 from emporio.data import StoreData
 from emporio.db import HANDOFF_CATEGORIES, HandoffStore
 from emporio.policies import PolicySection
 from emporio.results import error
+from emporio.retrieval import PolicyRetriever
 from emporio.session import SessionState
 
 TOOL_NAMES: tuple[str, ...] = (
     "search_products",
     "get_product",
     "get_policy_sections",
+    "search_policies",
     "verify_customer",
     "get_order_status",
     "list_my_orders",
@@ -49,6 +51,11 @@ class ToolContext:
     handoffs: HandoffStore
     session_id: str | None
     now: datetime
+    retriever: PolicyRetriever | None = None
+
+    def __post_init__(self) -> None:
+        if self.retriever is None:
+            self.retriever = PolicyRetriever(self.policies)  # BM25 only
 
 
 @dataclass(frozen=True)
@@ -127,6 +134,26 @@ def _build_tools(ctx: ToolContext) -> dict[str, _Tool]:
                 ("section_ids",),
             ),
             inject=lambda c: {"sections": c.policies},
+        ),
+        "search_policies": _Tool(
+            function=retrieval.search_policies,
+            description=(
+                "Search the store manual by meaning when you do not know which section "
+                "applies (vague or indirect questions). Returns the best sections with "
+                "their text, so no second call is needed. Use get_policy_sections when "
+                "you already know the section id."
+            ),
+            parameters=_object(
+                {
+                    "query": {
+                        "type": "string",
+                        "description": "The customer's question or its key words.",
+                    },
+                    "limit": {"type": "integer", "description": "1 to 5, default 3."},
+                },
+                ("query",),
+            ),
+            inject=lambda c: {"retriever": c.retriever},
         ),
         "verify_customer": _Tool(
             function=orders.verify_customer,

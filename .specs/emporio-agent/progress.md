@@ -2,7 +2,7 @@
 
 > Updated in the same commit that finishes each spec.
 
-**Last update:** 2026-10-31
+**Last update:** 2026-11-02
 
 ---
 
@@ -22,6 +22,7 @@
 | 10-routing-eval | 🟢 Done | 20 tests; live runs: claude-haiku-5.5 21/21, qwen3.7-flash 20/21 |
 | 11-samples-readme | 🟢 Done | 21 structure tests; clean-venv install verified |
 | 12-web-interface | 🟢 Done | 57 tests; manual pass in Chrome (desktop and a 390 px frame, both themes) |
+| 13-policy-search | 🟢 Done | 34-question gold set; BM25 recall@3 0.85, embeddings 0.97, hybrid 0.97 |
 
 > Legend: 🔴 not started · 🟡 in progress · 🟢 done · ❌ blocked
 
@@ -120,12 +121,30 @@
 - Added at the author's request: the side panel can be collapsed and expanded at any width, with a button in the header and an X inside the panel. On a wide screen the choice is saved in the browser and the chat takes the whole width; under 900 px it stays a drawer that always starts closed, and the dimmed backdrop appears only there. Clicking the label under a reply opens the panel again. Escape closes the drawer only on a narrow screen.
 - Written test-first (a static check that the controls are not narrow-only and the choice is stored), but that test only reads the files. The behavior was checked in Chrome by running the page: default open, collapse and reopen from both buttons, Escape ignored on a wide screen, the choice surviving a reload, and the label under a reply reopening the panel.
 - A slip worth recording: a PowerShell array literal dropped one of my edits (the comma binds tighter than `+`), which left two variables undeclared in the page script and the static test still green. The page was caught in the browser, not by the suite; the JavaScript still has no unit tests.
+### 2026-11-02: spec 13, policy search
+
+- Added a ranked search over the manual: a new tool search_policies, backed by BM25 and, when an embeddings model is reachable, fused with cosine similarity over embeddings by reciprocal rank fusion. Embeddings are lazy, cached on disk by text hash under var/, and any failure falls back to BM25, so the project still runs offline and without a key.
+- Added a gold set of 34 customer questions, written from the manual (7 of them vague on purpose), and a command: python -m emporio.evals.retrieval. Real run with openai/text-embedding-3-small through OpenRouter:
+
+| Method | recall@1 | recall@3 | MRR |
+|---|---|---|---|
+| BM25 | 0.76 | 0.85 | 0.82 |
+| Embeddings only | 0.88 | 0.97 | 0.93 |
+| Hybrid | 0.79 | 0.97 | 0.88 |
+
+- The hybrid ties the embeddings on recall@3 and is a little worse on the first position. I did not tune the fusion weight on this gold set, because that would only fit the test. The hybrid stays the default because BM25 protects exact terms (CNPJ, PAC, Sedex) that a vector can blur; this is a judgement, not something the 34 questions prove.
+- Test first: tests/test_retrieval.py was written before the module. One expectation was wrong (BM25 only returns sections with a positive score, so a narrow query returns one hit, not two); the test was fixed, not the code. Ruff removed two unused noqa comments.
+- Rule 3 of the prompt now tells the model to call search_policies when it does not know the section. The live agent evaluation has not been rerun for this change; it runs once, after the last change of this round.
+
 ---
 
 ## Decisions made during implementation
 
 | Decision | Spec | Rationale |
 |---|---|---|
+| Hybrid search stays the default although embeddings alone scored slightly higher on this gold set | 13 | BM25 protects exact terms a vector can blur; 34 questions are too few to prove the difference, and tuning the weight on them would only fit the test. |
+| The vector cache lives in var/ and is not committed | 13 | It is derived data and var/ is ignored; the evaluation result file in evals/results is what the repository keeps. |
+| No external vector database | 13 | It would need an account and a key and break the offline run; the Embedder protocol is the seam where one would plug in. |
 | The web session is created on first use instead of at startup | 12 | A server that fails to bind (port in use) leaves no empty session in the database. |
 | `theme.js` is a separate file | 12 | The page sends a Content-Security-Policy without inline scripts, and the saved theme must still be applied before the first paint. |
 | `/api/state` returns the turns of the current conversation | 12 | A page reload restores the transcript and the panel instead of showing an empty page over a live conversation. |

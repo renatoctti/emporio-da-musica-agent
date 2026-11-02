@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_MODEL = "anthropic/claude-haiku-5.5"
+DEFAULT_EMBEDDING_MODEL = "openai/text-embedding-3-small"
 REFERENCE_TIME = time(10, 0)
 
 
@@ -30,6 +31,8 @@ class Settings:
     now: datetime
     today: date
     simulated: bool = False  # true when EMPORIO_TODAY fixes the date
+    embedding_model: str = DEFAULT_EMBEDDING_MODEL
+    use_embeddings: bool = False  # needs an API key and EMPORIO_EMBEDDINGS not set to off
 
 
 def _read(env: Mapping[str, str], key: str) -> str | None:
@@ -58,6 +61,9 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         llm_base_url=_read(env, "LLM_BASE_URL") or DEFAULT_BASE_URL,
         llm_api_key=_read(env, "LLM_API_KEY"),
         llm_model=_read(env, "LLM_MODEL") or DEFAULT_MODEL,
+        embedding_model=_read(env, "EMBEDDING_MODEL") or DEFAULT_EMBEDDING_MODEL,
+        use_embeddings=bool(_read(env, "LLM_API_KEY"))
+        and (_read(env, "EMPORIO_EMBEDDINGS") or "auto").lower() != "off",
         now=now,
         today=now.date(),
         simulated=today_text is not None,

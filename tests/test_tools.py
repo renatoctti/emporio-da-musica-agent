@@ -47,7 +47,7 @@ def run(toolset, name, **arguments):
 
 def test_schemas_expose_the_eight_tools(toolset):
     names = [s["function"]["name"] for s in toolset.schemas]
-    assert names == list(TOOL_NAMES) and len(names) == 8
+    assert names == list(TOOL_NAMES) and len(names) == 9
     for schema in toolset.schemas:
         assert schema["type"] == "function"
         parameters = schema["function"]["parameters"]

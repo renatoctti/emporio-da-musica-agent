@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-02",
+  "embedding_model": "openai/text-embedding-3-small",
+  "methods": {
+    "bm25": {
+      "n": 34,
+      "recall_at_1": 0.7647,
+      "recall_at_3": 0.8529,
+      "mrr": 0.8221
+    },
+    "embeddings": {
+      "n": 34,
+      "recall_at_1": 0.8824,
+      "recall_at_3": 0.9706,
+      "mrr": 0.9265
+    },
+    "hybrid": {
+      "n": 34,
+      "recall_at_1": 0.7941,
+      "recall_at_3": 0.9706,
+      "mrr": 0.8824
+    }
+  }
+}
