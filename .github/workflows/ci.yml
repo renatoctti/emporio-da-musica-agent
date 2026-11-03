@@ -30,3 +30,15 @@ jobs:
         run: ruff format --check .
       - name: Tests
         run: pytest -q
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the image
+        run: docker build -t emporio-agent .
+      - name: Smoke test (needs no key)
+        run: |
+          docker run --rm emporio-agent data-report > report.txt
+          test -s report.txt
+          docker run --rm emporio-agent stats
