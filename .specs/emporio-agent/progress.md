@@ -26,6 +26,7 @@
 | 14-turn-metrics | 🟢 Done | metrics table, emporio stats, web and eval fields; 396 tests |
 | 15-chat-ui-dev-mode | 🟢 Done | chat-first page, developer mode, metrics tab; 400 tests; browser pass in both themes |
 | 16-adversarial-eval | 🟢 Done | 12 adversarial cases; 11/12 first live run, E33 was a test design error and was fixed; 428 tests |
+| 17-mcp-server | 🟢 Done | emporio mcp over stdio, no new dependency; checked with the official SDK client; 450 tests |
 
 > Legend: 🔴 not started · 🟡 in progress · 🟢 done · ❌ blocked
 
@@ -163,12 +164,22 @@
 - Live run against claude-haiku-5.5: 11 of 12 passed on the first run. The failure, E33, was a wrong test design and not an agent problem: the case expected a tool call, but faced with the SQL-looking message the agent did not run anything and asked for the order number alone, which is a safe answer (no leak, no internal error). The case now checks only that no internal error leaks, and it passes. E26 showed the intended behavior: after two failed verifications the agent refused a third try and pointed to the store contacts.
 - The fix was in the case, not in the agent, the tools or the prompt. A full run of all 33 cases is made once at the end of this round.
 
+### 2026-11-02: spec 17, MCP server
+
+- Added emporio mcp: the nine agent tools served to any Model Context Protocol client over stdio. The protocol is written by hand (JSON-RPC 2.0, one message per line: initialize with version negotiation, ping, tools/list, tools/call, the standard error codes, notifications without response), so there is no new dependency. The verification state lives for the whole server process, so the same identity rules apply as in the chat.
+- Test first: tests/test_mcp.py covers the handshake, the lifecycle (requests before initialize are refused), the tool listing, a catalog call, an unverified order call, the verification sequence, the error codes, the line-based serving with bad input and the command with injected input. Each tool also rejects an unexpected argument with a tool error.
+- Checked once against the official Python SDK (version 2.3.0) in a throwaway virtual environment outside the project: the client negotiated protocol 2025-06-18, listed the nine tools, searched the catalog, was refused an order before verification, verified order 8 and then read it. The SDK is not a dependency and is not installed by the project.
+- Finding during that check: with the embeddings switched off, the policy search for "posso devolver sem ter usado?" returns nothing, because BM25 does not link "devolver" to "devolução" in the manual. This is the lexical weakness measured in spec 13 (BM25 recall at 3 is 0.85); with a key the hybrid covers it. The README states it.
+- stdout carries only protocol messages and is flushed after every line, which a pipe needs.
+
 ---
 
 ## Decisions made during implementation
 
 | Decision | Spec | Rationale |
 |---|---|---|
+| The MCP server is written by hand and the official SDK is only a one-off check | 17 | A tools-only server needs four methods; a hand-written one matches the no-framework agent loop, adds no dependency and is covered by unit tests. The SDK client confirmed that it interoperates. |
+| One verification state per server process | 17 | An MCP client is one conversation over stdio; the identity rules and the attempt limit then behave as in the chat. |
 | Case E33 checks that no internal error leaks instead of requiring a tool call | 16 | The first live run showed the agent safely refusing to parse the strange message; requiring a call would have punished a safe answer. |
 | The structural test of the cases accepts a forbidden reply pattern as a check | 16 | A leak case has nothing else to assert; the pattern is deterministic and is itself tested with a good and a bad reply. |
 | The developer mode is off by default and the explanation panel left the customer view | 15 | A customer never sees how an assistant decides; the default page should look like a real chat. The evaluators still get the trace one click away, and the README says where. |

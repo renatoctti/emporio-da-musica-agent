@@ -8,7 +8,7 @@ import os
 import sys
 import webbrowser
 from collections import defaultdict
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -21,12 +21,26 @@ from emporio.conversation import start_conversation
 from emporio.data import load_store_data
 from emporio.db import HandoffStore, SessionStore, UnknownSessionError, connect
 from emporio.llm import ChatClient, MissingApiKeyError, OpenAIChatClient
+from emporio.mcp_server import McpServer, serve
 from emporio.metrics import Prices, format_summary, summarize
 from emporio.policies import load_policy_sections
+from emporio.retrieval import build_retriever
+from emporio.session import SessionState
+from emporio.tools import ToolContext, Toolset
 from emporio.web.app import WebApp
 from emporio.web.server import make_server
 
-COMMANDS = ("chat", "sessions", "handoffs", "export", "replay", "data-report", "web", "stats")
+COMMANDS = (
+    "chat",
+    "sessions",
+    "handoffs",
+    "export",
+    "replay",
+    "data-report",
+    "web",
+    "stats",
+    "mcp",
+)
 EXIT_WORDS = frozenset({"sair", "exit", "quit"})
 POLICY_FILE = "políticas_da_loja.pdf"
 DEFAULT_WEB_PORT = 8765
@@ -55,6 +69,7 @@ def build_parser() -> argparse.ArgumentParser:
     commands.add_parser("handoffs", help="list open handoff tickets")
     stats = commands.add_parser("stats", help="latency, tokens and cost of the answers")
     stats.add_argument("--session", metavar="SESSION_ID", help="only this conversation")
+    commands.add_parser("mcp", help="serve the agent tools to an MCP client over stdio")
     commands.add_parser("data-report", help="list the data issues found in the CSV files")
 
     export = commands.add_parser("export", help="print a conversation as Markdown")
@@ -265,6 +280,33 @@ def _cmd_handoffs(settings: Settings, write: Callable[[str], None]) -> int:
     return 0
 
 
+def _cmd_mcp(settings: Settings, read: Callable[[str], str], write: Callable[[str], None]) -> int:
+    """Serve the tools over stdio. stdout carries protocol messages only."""
+    data = load_store_data(settings.data_dir)
+    policies = load_policy_sections(settings.data_dir / POLICY_FILE)
+    conn = connect(settings.db_path)
+    session_id = SessionStore(conn).create_session("mcp-client", settings.today, settings.now)
+    context = ToolContext(
+        data,
+        policies,
+        SessionState(),
+        HandoffStore(conn),
+        session_id,
+        settings.now,
+        build_retriever(settings, policies),
+    )
+
+    def lines() -> Iterator[str]:
+        while True:
+            try:
+                yield read("")
+            except EOFError:
+                return
+
+    serve(McpServer(Toolset(context)), lines(), write, flush=sys.stdout.flush)
+    return 0
+
+
 def _cmd_stats(args: argparse.Namespace, settings: Settings, write: Callable[[str], None]) -> int:
     store = SessionStore(connect(settings.db_path))
     if args.session:
@@ -350,6 +392,8 @@ def main(
             return _cmd_sessions(settings, write)
         if args.command == "handoffs":
             return _cmd_handoffs(settings, write)
+        if args.command == "mcp":
+            return _cmd_mcp(settings, read, write)
         if args.command == "stats":
             return _cmd_stats(args, settings, write)
         if args.command == "export":
