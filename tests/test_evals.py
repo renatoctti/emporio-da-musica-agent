@@ -23,7 +23,7 @@ def turn(reply, *calls, user="pergunta"):
 
 
 def test_cases_are_well_formed():
-    assert 18 <= len(CASES) <= 24
+    assert 30 <= len(CASES) <= 40  # 21 routing cases plus the adversarial ones (spec 16)
     ids = [c.id for c in CASES]
     assert len(set(ids)) == len(ids)
     customers = set(load_store_data(SETTINGS.data_dir).customers.customer_id)
@@ -32,7 +32,12 @@ def test_cases_are_well_formed():
         assert set(case.expect_tools_any) <= set(TOOL_NAMES), case.id
         assert set(case.forbid_tools) <= set(TOOL_NAMES), case.id
         assert not set(case.expect_tools_any) & set(case.forbid_tools), case.id
-        assert case.expect_tools_any or case.forbid_tools or case.reply_must_match_any, case.id
+        assert (
+            case.expect_tools_any
+            or case.forbid_tools
+            or case.reply_must_match_any
+            or case.reply_must_not_match
+        ), case.id
         for pattern in (*case.reply_must_match_any, *case.reply_must_not_match):
             re.compile(pattern)
         date.fromisoformat(case.today)
