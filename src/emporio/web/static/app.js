@@ -8,7 +8,12 @@
     rules: "Regras · devolução e garantia",
     handoff: "Atendimento · equipe humana",
   };
-  var GREETING = "Oi! Eu sou a Melô, assistente virtual da Empório da Música. Como posso ajudar?";
+  var SHORTCUTS = [
+    { icon: "i-box", label: "Rastrear pedido", text: "Quero rastrear meu pedido." },
+    { icon: "i-return", label: "Trocas e devoluções", text: "Como funcionam as trocas e devoluções?" },
+    { icon: "i-card", label: "Formas de pagamento", text: "Quais são as formas de pagamento?" },
+    { icon: "i-headset", label: "Falar com atendente", text: "Quero falar com um atendente." },
+  ];
   var THEME_KEY = "emporio-theme";
   var DEV_KEY = "emporio-dev";
   var TABS = ["trace", "metrics", "tickets", "tests"];
@@ -115,22 +120,151 @@
     return kinds.length ? kinds : ["none"];
   }
 
-  // The time is for everybody; the metrics line and the source tags are only for the developer mode.
-  function botMessage(turn, index) {
+  // ---- answer cards (models come from cards.js), copy buttons and follow-up questions ----
+  function icon(id) {
+    var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    svg.setAttribute("class", "icon");
+    use.setAttribute("href", "#" + id);
+    svg.append(use);
+    return svg;
+  }
+
+  function copyText(text, button) {
+    var done = function () {
+      var label = $(".act-label", button);
+      var before = label.textContent;
+      label.textContent = "Copiado";
+      setTimeout(function () { label.textContent = before; }, 1500);
+    };
+    var fallback = function () {
+      var area = h("textarea", { class: "sr-only", tabindex: "-1", "aria-hidden": "true", readonly: true });
+      area.value = text;
+      document.body.append(area);
+      area.select();
+      try { if (document.execCommand("copy")) done(); } catch (error) { /* the text stays selectable in the answer */ }
+      area.remove();
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+    else fallback();
+  }
+
+  function copyButton(label, text) {
+    var button = h("button", { type: "button", class: "act-btn", title: label, "aria-label": label, onclick: function () { copyText(text, button); } },
+      icon("i-copy"), h("span", { class: "act-label", text: "Copiar" }));
+    return button;
+  }
+
+  function line(cls, text) { return text ? h("p", { class: cls, text: text }) : null; }
+
+  function priceRow(oldPrice, price, discount) {
+    return h("div", { class: "price-row" },
+      oldPrice ? h("s", { class: "price-old", text: oldPrice }) : null,
+      h("strong", { class: "price", text: price }),
+      discount ? h("span", { class: "badge-off", text: discount }) : null);
+  }
+
+  function productCardNode(c) {
+    return h("div", { class: "ans-card card-product" },
+      h("div", { class: "card-media", "aria-hidden": "true" }, icon("i-ukulele")),
+      h("div", { class: "card-body" },
+        h("h3", { class: "card-title", text: c.name }),
+        line("card-sub", [c.brand, c.category].filter(Boolean).join(" · ")),
+        priceRow(c.list_price, c.price, c.discount),
+        line("card-line", c.installment), line("card-line", c.pix),
+        c.stock ? h("p", { class: "stock", "data-out": String(/Esgotado|Descontinuado/.test(c.stock)), text: c.stock }) : null));
+  }
+
+  function listCardNode(c) {
+    var list = h("ul", { class: "mini-list" });
+    c.items.forEach(function (p) {
+      list.append(h("li", {},
+        h("div", {}, h("p", { class: "mini-name", text: p.name }), line("card-sub", p.stock)),
+        h("div", { class: "mini-price" }, p.list_price ? h("s", { class: "price-old", text: p.list_price }) : null, h("strong", { text: p.price }))));
+    });
+    return h("div", { class: "ans-card card-list" }, h("div", { class: "card-head" }, h("span", { text: "Produtos encontrados" })), list,
+      c.more ? h("p", { class: "more", text: "+ " + plural(c.more, "produto", "produtos") + " nesta busca" }) : null);
+  }
+
+  var ORDER_TONE = { pending: "warn", delivered: "ok", cancelled: "err" };
+
+  function orderCardNode(c) {
+    var stepper = h("ol", { class: "stepper", "data-status": c.status, "aria-label": "Andamento do pedido" });
+    c.steps.forEach(function (s) {
+      stepper.append(h("li", { class: "stp", "data-state": s.state, "aria-current": s.state === "current" ? "step" : false, text: s.label }));
+    });
+    var facts = h("dl", { class: "facts" });
+    var row = function (label, value, extra) { if (value) facts.append(h("dt", { text: label }), h("dd", {}, value, extra || null)); };
+    row("Pedido feito em", c.date);
+    row("Pagamento", c.payment);
+    row("Total", c.total);
+    row("Previsão de entrega", c.estimate, c.late ? h("span", { class: "badge", "data-tone": "warn", text: "atrasada" }) : null);
+    var items = h("ul", { class: "order-items" });
+    c.items.forEach(function (text) { items.append(h("li", { text: text })); });
+    return h("div", { class: "ans-card card-order" },
+      h("div", { class: "card-head" }, h("span", { text: "Pedido " + c.order_id }), h("span", { class: "badge", "data-tone": ORDER_TONE[c.status] || false, text: c.status_text })),
+      stepper, items, h("div", { class: "card-pad" }, facts),
+      c.tracking_code ? h("div", { class: "tracking" }, h("span", {}, "Rastreio ", h("code", { text: c.tracking_code })), copyButton("Copiar código de rastreio", c.tracking_code)) : null);
+  }
+
+  function ticketCardNode(c) {
+    return h("div", { class: "ans-card card-ticket" },
+      h("div", { class: "card-head" }, h("span", { text: "Atendimento humano" }), h("span", { class: "badge", "data-tone": "ok", text: c.status })),
+      h("p", { class: "ticket-protocol-big", text: c.protocol }),
+      h("p", { class: "ticket-lines" }, c.category + (c.due ? " · resposta até " + c.due : ""),
+        c.duplicate ? h("br") : null, c.duplicate ? "Este chamado já existia; não abri outro." : null));
+  }
+
+  function sourcesCardNode(c) {
+    var list = h("ul", { class: "src-list" });
+    c.items.forEach(function (s) { list.append(h("li", { class: "src", text: s.id + " · " + s.title })); });
+    return h("div", { class: "ans-card card-sources" }, h("p", { class: "card-sub", text: "Fontes no manual da loja" }), list);
+  }
+
+  var CARD_NODE = { product: productCardNode, products: listCardNode, order: orderCardNode, ticket: ticketCardNode, sources: sourcesCardNode };
+
+  function cardsNode(cards) {
+    var box = h("div", { class: "cards" });
+    cards.forEach(function (card) { box.append(CARD_NODE[card.type](card)); });
+    return box;
+  }
+
+  function followUpsNode(texts) {
+    var box = h("div", { class: "follow-ups" });
+    texts.forEach(function (text) { box.append(h("button", { type: "button", class: "follow-btn", onclick: function () { send(text); } }, text)); });
+    return box;
+  }
+
+  // The time and the copy button are for everybody; the metrics line and the source tags are only for the developer mode.
+  function botMessage(turn, index, latest) {
+    var cards = window.EmporioCards ? window.EmporioCards.cardsFromTrace(turn.trace) : [];
+    var ups = latest && window.EmporioCards ? window.EmporioCards.followUps(cards) : [];
     var meta = h("div", { class: "meta" },
       turn.at ? h("span", { text: clock(turn.at) }) : null,
+      copyButton("Copiar resposta", turn.reply),
       turn.metrics ? h("span", { class: "dev-line dev-only", text: metricsText(turn.metrics) }) : null);
     var tags = h("div", { class: "tags dev-only" });
     kindsOf(turn.trace).forEach(function (kind) {
       tags.append(h("button", { type: "button", class: "tag k-" + kind, title: "Ver em Decisões", onclick: function () { focusTurn(index); } }, KINDS[kind]));
     });
-    var stack = h("div", { class: "stack" }, h("div", { class: "bubble" }, richText(turn.reply)), meta.childNodes.length ? meta : null, tags);
+    var stack = h("div", { class: "stack" + (cards.length ? " has-cards" : "") },
+      h("div", { class: "bubble" }, richText(turn.reply)), cards.length ? cardsNode(cards) : null, ups.length ? followUpsNode(ups) : null, meta, tags);
     return h("article", { class: "msg msg-bot", id: "turn-" + index }, avatar(), stack);
   }
 
-  function greetingMessage() {
-    return h("article", { class: "msg msg-bot", id: "greeting" }, avatar(),
-      h("div", { class: "stack" }, h("div", { class: "bubble" }, h("div", { class: "prose" }, h("p", { text: GREETING })))));
+  // The first screen: the greeting, the suggestions and the shortcuts. It goes away with the first message.
+  function welcomeNode() {
+    var shortcuts = h("div", { class: "shortcuts" });
+    SHORTCUTS.forEach(function (s) {
+      shortcuts.append(h("button", { type: "button", class: "shortcut", onclick: function () { send(s.text); } }, icon(s.icon), s.label));
+    });
+    return h("section", { class: "welcome", id: "welcome", "aria-label": "Boas-vindas" },
+      h("div", { class: "welcome-mark", "aria-hidden": "true" }, icon("i-ukulele")),
+      h("h2", { text: "Olá! Eu sou a Melô" }),
+      h("p", { text: "Assistente virtual da Empório da Música. Tiro dúvidas sobre produtos, preços, parcelas, pedidos, trocas e garantia." }),
+      chipsNode(),
+      h("p", { class: "welcome-label", text: "Ou escolha um atalho" }),
+      shortcuts);
   }
 
   // Quick replies under the greeting; they go away with the first customer message.
@@ -155,10 +289,10 @@
 
   function renderLog() {
     var log = $("#log");
-    log.replaceChildren(greetingMessage());
-    if (!app.turns.length && app.info) log.append(chipsNode());
+    log.replaceChildren();
+    if (!app.turns.length && app.info) log.append(welcomeNode());
     app.turns.forEach(function (turn, index) {
-      log.append(userMessage(turn.user, turn.at), botMessage(turn, index));
+      log.append(userMessage(turn.user, turn.at), botMessage(turn, index, index === app.turns.length - 1));
     });
   }
 
@@ -173,8 +307,9 @@
     if (app.busy || !text) return Promise.resolve();
     app.busy = true;
     updateSend();
-    var chips = $("#chips");
-    if (chips) chips.remove();
+    var welcome = $("#welcome");
+    if (welcome) welcome.remove();
+    document.querySelectorAll(".follow-ups").forEach(function (node) { node.remove(); });
     var log = $("#log");
     if (!retry) {
       log.append(userMessage(text, new Date()));
@@ -188,7 +323,7 @@
       typing.remove();
       var turn = { user: text, reply: result.reply, trace: result.trace, metrics: result.metrics, at: new Date() };
       app.turns.push(turn);
-      log.append(botMessage(turn, app.turns.length - 1));
+      log.append(botMessage(turn, app.turns.length - 1, true));
       setVerified(result.verified);
       renderTrace();
       renderMetrics();
@@ -357,7 +492,7 @@
   function applyInfo(info) {
     app.info = info;
     var status = info.store.status_text;
-    $("#head-status").textContent = "Loja " + status.charAt(0).toLowerCase() + status.slice(1);
+    $("#head-status").textContent = "Empório da Música · " + status;
     $("#day-text").textContent = info.reference.simulated ? info.reference.label + " · data simulada" : "Hoje";
     var legend = $("#legend");
     legend.replaceChildren();
@@ -389,7 +524,8 @@
   }
 
   function initDev() {
-    var apply = function () { setDev(narrowQuery.matches ? false : readSaved(DEV_KEY) === "on", false); };
+    var embedded = document.documentElement.dataset.embed === "on";
+    var apply = function () { setDev(embedded || narrowQuery.matches ? false : readSaved(DEV_KEY) === "on", false); };
     apply();
     narrowQuery.addEventListener("change", apply);
   }

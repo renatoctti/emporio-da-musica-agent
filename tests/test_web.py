@@ -637,3 +637,72 @@ def test_a_policy_search_has_its_own_title_and_a_summary_that_names_the_method()
     assert one["summary"] == "palavras · item 4.1"
     none = trace("search_policies", {"query": "q"}, {"method": "bm25", "sections": []})
     assert none["summary"] == "nada encontrado"
+
+
+# --- spec 22: welcome screen, answer cards, widget on the store page ----------------------------
+
+
+def test_cards_js_is_served_and_loaded_before_app_js():
+    html, script, _ = _page()
+    assert html.index("/static/cards.js") < html.index("/static/app.js")
+    response = get(make_app()[0], "/static/cards.js")
+    assert (response.status, response.content_type) == (200, "text/javascript; charset=utf-8")
+    assert "EmporioCards" in script and "cardsFromTrace" in script and "followUps" in script
+
+
+def test_the_four_suggestions_keep_their_labels_and_texts():
+    suggestions = body(get(make_app()[0], "/api/state"))["suggestions"]
+    assert [(s["label"], s["text"]) for s in suggestions] == [
+        ("Violões até R$ 1.000", "Quais violões vocês têm disponíveis até R$ 1000?"),
+        ("Ohana CK-20 em 10x", "Quanto custa o Ohana CK-20? Dá para parcelar em 10x?"),
+        ("Troca por defeito", "Como funciona a troca por defeito?"),
+        ("Quero devolver um produto", "Comprei um ukulele e me arrependi, quero devolver."),
+    ]
+
+
+def test_the_header_is_a_branded_band_and_the_composer_says_the_assistant_is_an_ai():
+    html, _, sheet = _page()
+    assert 'class="brand-mark"' in html and 'class="badge-ai"' in html
+    assert "é uma IA e pode errar" in html
+    assert "--head-bg" in sheet
+
+
+def test_the_empty_conversation_shows_a_welcome_screen_with_shortcuts():
+    _, script, sheet = _page()
+    assert 'id: "welcome"' in script
+    for label in (
+        "Rastrear pedido",
+        "Trocas e devoluções",
+        "Formas de pagamento",
+        "Falar com atendente",
+    ):
+        assert label in script, label
+    assert ".welcome" in sheet and ".shortcut" in sheet
+
+
+def test_answers_carry_cards_follow_ups_and_a_copy_button():
+    _, script, sheet = _page()
+    for part in ("cardsFromTrace", "followUps", "clipboard", "copyText", "Copiar"):
+        assert part in script, part
+    for rule in (
+        ".card-product",
+        ".card-order",
+        ".card-ticket",
+        ".card-sources",
+        ".stepper",
+        ".follow-ups",
+    ):
+        assert rule in sheet, rule
+
+
+def test_the_store_page_hosts_the_chat_as_a_widget_and_only_the_same_origin_may_frame_the_chat():
+    app, _ = make_app()
+    for route in ("/", "/loja"):
+        response = get(app, route)
+        assert response.status == 200 and response.content_type == "text/html; charset=utf-8"
+        csp = dict(response.headers)["Content-Security-Policy"]
+        assert "frame-ancestors 'self'" in csp and "'none'" not in csp.split("frame-ancestors")[1]
+    store = get(app, "/loja").body.decode()
+    assert "<iframe" in store and 'src="/?embed=1"' in store and 'id="launcher"' in store
+    assert (STATIC_DIR / "loja.js").is_file() and (STATIC_DIR / "loja.css").is_file()
+    assert get(app, "/loja", {"Host": "evil.example"}).status == 403

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Empório da Música · Loja de demonstração</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/loja.css">
+<script src="/static/theme.js"></script>
+<script src="/static/loja.js" defer></script>
+</head>
+<body>
+<p class="demo-note">Demonstração: este é um site fictício da loja, só para mostrar a Melô como widget no canto da tela.</p>
+
+<header class="site-head">
+  <div class="site-brand"><span class="site-mark" aria-hidden="true"></span><span>Empório da Música</span></div>
+  <nav class="site-nav" aria-label="Seções da loja">
+    <a href="#violoes">Violões</a><a href="#ukuleles">Ukuleles</a><a href="#teclados">Teclados</a><a href="#baterias">Baterias</a><a href="#promocoes">Promoções</a>
+  </nav>
+  <span class="site-phone">(67) 3341-4444</span>
+</header>
+
+<main class="site-main">
+  <section class="hero">
+    <p class="hero-place">Campo Grande · MS</p>
+    <h1>Sua música começa aqui.</h1>
+    <p class="hero-text">Mais de 300 instrumentos de marcas nacionais e internacionais, para quem está começando e para quem já toca há anos.</p>
+  </section>
+
+  <section class="shelf" aria-label="Destaques">
+    <article class="item"><div class="item-photo" aria-hidden="true"></div><h2>Ohana CK-20 Concert Natural</h2><p class="item-price">R$ 549,00</p></article>
+    <article class="item"><div class="item-photo" aria-hidden="true"></div><h2>Takamine GD20 Dreadnought Natural</h2><p class="item-price">R$ 2.199,00</p></article>
+    <article class="item"><div class="item-photo" aria-hidden="true"></div><h2>Kala KA-C Concert Mogno</h2><p class="item-price">R$ 349,90</p></article>
+  </section>
+</main>
+
+<section class="widget" aria-label="Chat com a Melô">
+  <div class="widget-panel" id="panel" hidden>
+    <iframe title="Chat com a Melô" src="/?embed=1"></iframe>
+  </div>
+  <button class="launcher" id="launcher" type="button" aria-expanded="false" aria-controls="panel" aria-label="Abrir o chat com a Melô">
+    <svg class="launcher-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.6A8 8 0 1 1 21 12z"/></svg>
+    <svg class="launcher-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+</section>
+</body>
+</html>

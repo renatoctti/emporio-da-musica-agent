@@ -1,0 +1,77 @@
+/* Demonstration store page: it only exists to show the chat as a widget in the corner (/loja). */
+:root {
+  --bg: #fbfaf7;
+  --card: #ffffff;
+  --ink: #18202c;
+  --muted: #586274;
+  --line: #e7e3da;
+  --accent: #1b4f72;
+  --accent-soft: #eaf1f7;
+  --note-bg: #fff4d6;
+  --note-ink: #5a4300;
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1318; --card: #161b22; --ink: #e6e9ee; --muted: #98a2b1; --line: #252c36;
+    --accent: #2a74a8; --accent-soft: #172a3a; --note-bg: #33260f; --note-ink: #f0d9a0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1318; --card: #161b22; --ink: #e6e9ee; --muted: #98a2b1; --line: #252c36;
+  --accent: #2a74a8; --accent-soft: #172a3a; --note-bg: #33260f; --note-ink: #f0d9a0;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink); font: 400 16px/1.5 var(--font); }
+h1, h2, p { margin: 0; }
+a { color: inherit; text-decoration: none; }
+a:hover { color: var(--accent); }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.demo-note { padding: 8px max(16px, env(safe-area-inset-left, 0px)); background: var(--note-bg); color: var(--note-ink); font-size: 13px; text-align: center; }
+.site-head {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 28px;
+  padding: 18px max(24px, env(safe-area-inset-left, 0px)); border-bottom: 1px solid var(--line);
+}
+.site-brand { display: flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 700; }
+.site-mark { width: 26px; height: 26px; border-radius: 8px; background: var(--accent); }
+.site-nav { display: flex; flex-wrap: wrap; gap: 8px 26px; font-size: 14.5px; font-weight: 500; }
+.site-phone { font-size: 14px; color: var(--muted); }
+
+.site-main { padding: 0 max(24px, env(safe-area-inset-left, 0px)) 120px; }
+.hero { max-width: 720px; padding: 56px 0 36px; }
+.hero-place { font-size: 14px; color: var(--muted); }
+.hero h1 { margin: 8px 0 16px; font-size: clamp(34px, 6vw, 58px); line-height: 1.05; letter-spacing: -0.03em; }
+.hero-text { max-width: 560px; font-size: 18px; color: var(--muted); }
+
+.shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 260px)); gap: 20px; }
+.item { overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: var(--card); }
+.item-photo { height: 140px; background: var(--accent-soft); }
+.item h2 { padding: 14px 14px 0; font-size: 15px; font-weight: 600; }
+.item-price { padding: 4px 14px 14px; font-size: 18px; font-weight: 700; }
+
+/* the widget: a round launcher and a panel above it, like the chat of a large store */
+.widget { position: fixed; right: max(20px, env(safe-area-inset-right, 0px)); bottom: max(20px, env(safe-area-inset-bottom, 0px)); z-index: 10; display: flex; flex-direction: column; align-items: flex-end; gap: 14px; }
+.widget-panel {
+  width: min(400px, calc(100vw - 32px)); height: min(640px, calc(100vh - 120px)); overflow: hidden;
+  border: 1px solid var(--line); border-radius: 20px; background: var(--card); box-shadow: 0 18px 50px rgb(24 32 44 / 0.28);
+}
+.widget-panel iframe { display: block; width: 100%; height: 100%; border: 0; }
+.launcher {
+  display: grid; place-items: center; width: 56px; height: 56px; border: 0; border-radius: 50%;
+  background: var(--accent); color: #fff; box-shadow: 0 8px 24px rgb(27 79 114 / 0.4); cursor: pointer;
+}
+.launcher svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.launcher[aria-expanded="false"] .launcher-close, .launcher[aria-expanded="true"] .launcher-open { display: none; }
+
+@media (max-width: 480px) {
+  .widget-panel { height: calc(100vh - 100px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

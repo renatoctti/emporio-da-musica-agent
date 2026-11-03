@@ -31,6 +31,7 @@
 | 19-context-budget | 🟢 Done | deterministic history budget, no extra model call; 461 tests |
 | 20-docker | 🟢 Done | Dockerfile for the terminal chat; built and smoke-tested in CI (3 jobs green); 465 tests |
 | 21-readme-round-two | 🟢 Done | README, diagram, 3 screenshots, project map; README numbers tested against the reports; 472 tests |
+| 22-chat-ui-rich-cards | 🟢 Done | Branded header, welcome screen, answer cards from tool results, follow-ups, copy, /loja widget; 19 Node-run card tests |
 
 > Legend: 🔴 not started · 🟡 in progress · 🟢 done · ❌ blocked
 
@@ -204,6 +205,14 @@
 - The 33 scenarios were run once at the end (33 of 33). Before that, two cases of the second round had been wrong and were fixed: E33 (it demanded a tool call) and E28 (its pattern flagged a refusal that quoted the injected sentence).
 - The five samples were regenerated with the agent as it is now. PROJECT_MAP.md was updated, including new sections for CI and observability.
 - Not added: a sentence saying that every commit was reviewed. The author said they reviewed the commits, but the README is written by the assistant and does not claim it for them; they can add it.
+
+### 2026-11-03: spec 22, chat window with rich cards
+
+- The customer view now looks like the chat of a large store: a branded header band with an IA badge and the store status, a welcome screen (greeting, the four suggestions unchanged, four shortcuts), and a note under the composer that the assistant is an AI and can be wrong.
+- Answers carry cards drawn from the tool results: product (list price struck through only under a promotion, discount, installment, PIX line, stock), a short product list, the order with its three steps and a copy button for the tracking code, the ticket and the manual sections used. Follow-up questions appear under the last answer. A list that only repeats a product card is dropped.
+- The card logic is a pure file (cards.js) tested from pytest through Node with the real tool results (19 tests; skipped when Node is missing, CI has it). The browser formats the numbers it receives and computes none.
+- /loja is a fictional store page with the chat as a widget in an iframe of the same origin; for that the CSP of the pages changed from frame-ancestors none to self.
+- Checked in Chrome (dark theme): welcome screen, product answer, order answer with a late estimate, the widget. Not checked on a real phone; the screenshots in docs/ are retaken in the README spec.
 
 ---
 

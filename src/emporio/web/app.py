@@ -48,7 +48,7 @@ _PAGE_HEADERS = (
         "Content-Security-Policy",
         (
             "default-src 'self'; img-src 'self' data:; base-uri 'none'; "
-            "form-action 'self'; frame-ancestors 'none'"
+            "form-action 'self'; frame-ancestors 'self'"
         ),
     ),
     ("X-Content-Type-Options", "nosniff"),
@@ -374,7 +374,7 @@ class WebApp:
         if not self._is_local(lowered):
             return _error(403, "Esta página só responde no próprio computador.")
         route = unquote(path.split("?", 1)[0])
-        get_routes = {"/", "/api/state", "/api/handoffs"}
+        get_routes = {"/", "/loja", "/api/state", "/api/handoffs"}
         post_routes = {"/api/chat", "/api/reset"}
         if method == "GET":
             if route in get_routes:
@@ -395,6 +395,8 @@ class WebApp:
     def _get(self, route: str) -> Response:
         if route == "/":
             return self._static("index.html")
+        if route == "/loja":
+            return self._static("loja.html")
         if route == "/api/state":
             return _json(200, self.state())
         return _json(200, {"tickets": self.tickets()})
