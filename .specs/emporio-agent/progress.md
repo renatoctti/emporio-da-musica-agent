@@ -30,6 +30,7 @@
 | 18-ci | 🟢 Done | GitHub Actions: ruff, format check and pytest on Python 3.11 and 3.12; 455 tests |
 | 19-context-budget | 🟢 Done | deterministic history budget, no extra model call; 461 tests |
 | 20-docker | 🟢 Done | Dockerfile for the terminal chat; built and smoke-tested in CI (3 jobs green); 465 tests |
+| 21-readme-round-two | 🟢 Done | README, diagram, 3 screenshots, project map; README numbers tested against the reports; 472 tests |
 
 > Legend: 🔴 not started · 🟡 in progress · 🟢 done · ❌ blocked
 
@@ -195,12 +196,22 @@
 - Not built on the author machine: Docker Desktop was not running and it was not started without being asked. The proof is the CI: a new docker job builds the image and runs two commands that need no key (data-report and stats) as a smoke test. The first run on GitHub was green in all three jobs (Python 3.11, Python 3.12 and docker).
 - Test first: tests/test_docker.py reads the Dockerfile, the .dockerignore and the workflow (base image, copied folders, entrypoint, volume, non-root user, no key, the ignored paths and the smoke-test commands). These tests read files, so they do not replace the CI run.
 
+### 2026-11-02: spec 21, README for the second round
+
+- Rewrote the README for the second round: nine tools, the new commands (stats, mcp, the retrieval evaluation, the adversarial tag, docker run) and settings (embeddings and prices), a Mermaid architecture diagram that GitHub renders, three screenshots (the chat in both themes and the developer mode), the policy search and its numbers, the adversarial cases, the metrics, the context budget, the MCP server, CI and Docker, with the decisions table extended and the limits stated for each new part.
+- A new test (tests/test_readme_extension.py) compares the README with the reports: the retrieval numbers (recall at 1 and 3, MRR for the three methods) and the result of the 33-case run must be exactly the ones in evals/results, and the counts must be current (no leftover count of eight tools, 370 tests, 11 specs or 21 scenarios). The earlier README tests still pass, including the 21/21, 20/21 and 18/21 results and the held-out caveat.
+- The honest remarks that matter were added on purpose: in the 33-case run the model never called the policy search, so its benefit for the agent is unproven; BM25 alone misses word variants; the Docker image was only built in CI; the MCP server was checked with one client; the narrow-screen drawer of the developer mode was checked by reading the CSS and not on a real phone; the embeddings send the question of the customer to the same provider as the chat.
+- The 33 scenarios were run once at the end (33 of 33). Before that, two cases of the second round had been wrong and were fixed: E33 (it demanded a tool call) and E28 (its pattern flagged a refusal that quoted the injected sentence).
+- The five samples were regenerated with the agent as it is now. PROJECT_MAP.md was updated, including new sections for CI and observability.
+- Not added: a sentence saying that every commit was reviewed. The author said they reviewed the commits, but the README is written by the assistant and does not claim it for them; they can add it.
+
 ---
 
 ## Decisions made during implementation
 
 | Decision | Spec | Rationale |
 |---|---|---|
+| The README numbers are checked against the JSON reports by a test | 21 | A README that quotes results by hand drifts from the reports after the next run; the test makes a mismatch fail. |
 | The Docker image serves the terminal chat and not the web page | 20 | The web server listens on 127.0.0.1 only on purpose; a container would need it bound to all interfaces, which would weaken the local-only rule for a small gain. |
 | The image is checked by a CI job instead of a local build | 20 | Docker Desktop was not running and was not started without being asked; the CI builds from a clean checkout and runs a smoke test, which is a stronger check than a build on the author machine. |
 | Context is trimmed by fixed rules (old tool results, then old turns), not by a model-written summary | 19 | A summary costs a model call and can state something the customer never said; the fixed order is deterministic, free and testable. |
