@@ -1,6 +1,6 @@
 # Spec 20: Docker image for the terminal chat
 
-**Status:** 🟡 Draft
+**Status:** 🟢 Implemented
 **Author:** renatoctti
 **Date:** 2026-11-02
 **Scope:** a Dockerfile and a CI job that builds it and runs a smoke test
@@ -42,10 +42,10 @@ passed at run time, and the build context excludes the .env file.
 
 | ID | Requirement | Priority | Acceptance |
 |---|---|---|---|
-| 🟡 RF-01 | The image installs the project with its data and starts the emporio command; with no argument it opens the chat | Must | Static check of the entrypoint and of the default command |
-| 🟡 RF-02 | The database path points to a volume (/data) and the process runs as a user that is not root | Must | Static check |
-| 🟡 RF-03 | The key and the local files are never in the image: the build context excludes .env, var, .git and the virtual environment, and no key is set in the file | Must | Static check of .dockerignore and of the Dockerfile |
-| 🟡 RF-04 | The CI builds the image and runs two commands that need no key (data-report and stats) as a smoke test | Must | Static check of the workflow; the real proof is the run on GitHub |
+| ✅ RF-01 | The image installs the project with its data and starts the emporio command; with no argument it opens the chat | Must | Static check of the entrypoint and of the default command |
+| ✅ RF-02 | The database path points to a volume (/data) and the process runs as a user that is not root | Must | Static check |
+| ✅ RF-03 | The key and the local files are never in the image: the build context excludes .env, var, .git and the virtual environment, and no key is set in the file | Must | Static check of .dockerignore and of the Dockerfile |
+| ✅ RF-04 | The CI builds the image and runs two commands that need no key (data-report and stats) as a smoke test | Must | Static check of the workflow; the real proof is the run on GitHub |
 
 ## Non-functional requirements
 
@@ -57,6 +57,6 @@ passed at run time, and the build context excludes the .env file.
 
 ## Test checklist
 
-- [ ] ✅ Dockerfile and .dockerignore checks
-- [ ] ✅ The docker job of the workflow
-- [ ] ✅ The job is green on GitHub (checked after the push)
+- [x] ✅ Dockerfile and .dockerignore checks
+- [x] ✅ The docker job of the workflow
+- [x] ✅ The job is green on GitHub (checked after the push)

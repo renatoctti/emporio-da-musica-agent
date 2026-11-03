@@ -29,6 +29,7 @@
 | 17-mcp-server | 🟢 Done | emporio mcp over stdio, no new dependency; checked with the official SDK client; 450 tests |
 | 18-ci | 🟢 Done | GitHub Actions: ruff, format check and pytest on Python 3.11 and 3.12; 455 tests |
 | 19-context-budget | 🟢 Done | deterministic history budget, no extra model call; 461 tests |
+| 20-docker | 🟢 Done | Dockerfile for the terminal chat; built and smoke-tested in CI (3 jobs green); 465 tests |
 
 > Legend: 🔴 not started · 🟡 in progress · 🟢 done · ❌ blocked
 
@@ -187,12 +188,21 @@
 - The budget is generous on purpose: a normal chat (a few turns, a few tool results) never changes. In a measurement of this session, one answer with two lookups used about 12 thousand tokens, mostly the system prompt and the tool schemas sent twice, so the budget protects long conversations and does not shrink short ones.
 - Test first: tests/test_context.py covers the unchanged case, the notes with paired calls, whole-turn dropping with no orphan tool message, purity and determinism, and the agent sending the compacted history while the caller keeps the full one. A summary written by a model was left out on purpose: it costs a call and can invent details.
 
+### 2026-11-02: spec 20, Docker image
+
+- Added a Dockerfile (official python 3.12 slim image) that installs the project in editable mode from /app together with the manual and the CSV files, runs as a user that is not root and keeps the database in a volume at /data. The entrypoint is the emporio command and the default command is chat, so docker run -it --env-file .env emporio-agent opens the terminal chat. A .dockerignore keeps .env, var, .git and the virtual environment out of the build context, and the Dockerfile sets no key.
+- The image is for the terminal chat and the other commands. The web page is not served from the container, because the server listens on the loopback address only (spec 12); exposing it would need a bind to all interfaces, which this spec does not do.
+- Not built on the author machine: Docker Desktop was not running and it was not started without being asked. The proof is the CI: a new docker job builds the image and runs two commands that need no key (data-report and stats) as a smoke test. The first run on GitHub was green in all three jobs (Python 3.11, Python 3.12 and docker).
+- Test first: tests/test_docker.py reads the Dockerfile, the .dockerignore and the workflow (base image, copied folders, entrypoint, volume, non-root user, no key, the ignored paths and the smoke-test commands). These tests read files, so they do not replace the CI run.
+
 ---
 
 ## Decisions made during implementation
 
 | Decision | Spec | Rationale |
 |---|---|---|
+| The Docker image serves the terminal chat and not the web page | 20 | The web server listens on 127.0.0.1 only on purpose; a container would need it bound to all interfaces, which would weaken the local-only rule for a small gain. |
+| The image is checked by a CI job instead of a local build | 20 | Docker Desktop was not running and was not started without being asked; the CI builds from a clean checkout and runs a smoke test, which is a stronger check than a build on the author machine. |
 | Context is trimmed by fixed rules (old tool results, then old turns), not by a model-written summary | 19 | A summary costs a model call and can state something the customer never said; the fixed order is deterministic, free and testable. |
 | The compaction applies only to what is sent, never to what is saved | 19 | The saved conversation is the record for export and replay; the verification state is in code, so shortening the sent history cannot weaken the identity check. |
 | The CI runs on Linux with Python 3.11 and 3.12 and no secret | 18 | It checks the project from a clean checkout on a system other than the author machine (paths, line endings, the accent in the name of the manual) without exposing the key. |
