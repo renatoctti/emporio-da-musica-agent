@@ -28,6 +28,7 @@
 | 16-adversarial-eval | 🟢 Done | 12 adversarial cases; 11/12 first live run, E33 was a test design error and was fixed; 428 tests |
 | 17-mcp-server | 🟢 Done | emporio mcp over stdio, no new dependency; checked with the official SDK client; 450 tests |
 | 18-ci | 🟢 Done | GitHub Actions: ruff, format check and pytest on Python 3.11 and 3.12; 455 tests |
+| 19-context-budget | 🟢 Done | deterministic history budget, no extra model call; 461 tests |
 
 > Legend: 🔴 not started · 🟡 in progress · 🟢 done · ❌ blocked
 
@@ -179,12 +180,21 @@
 - The workflow needs no key because the model, the embeddings and the clock are faked or fixed in the tests; the live evaluation is not part of it (it needs a key and costs money).
 - Test first: tests/test_ci.py reads the workflow (triggers, commands, matrix, permissions, only official actions) and the README badge. These tests read files, so the real proof is the first run on GitHub, which is checked right after the push and noted below.
 
+### 2026-11-02: spec 19, context budget
+
+- Added a context budget: the history that the model receives is limited to about 40 thousand characters, with no extra model call. Over the budget, the results of the tool calls of old turns (all but the last two) become a short note, keeping the tool_call_id so every call stays paired with an answer; if that is still too big, the oldest whole turns are dropped. The last two turns are always intact, the input list is never modified, and the database keeps the full conversation.
+- It is safe for the identity rules because the verification state lives in code (the session state), not in the messages, so dropping old messages cannot make the agent forget who is verified or let it skip the check.
+- The budget is generous on purpose: a normal chat (a few turns, a few tool results) never changes. In a measurement of this session, one answer with two lookups used about 12 thousand tokens, mostly the system prompt and the tool schemas sent twice, so the budget protects long conversations and does not shrink short ones.
+- Test first: tests/test_context.py covers the unchanged case, the notes with paired calls, whole-turn dropping with no orphan tool message, purity and determinism, and the agent sending the compacted history while the caller keeps the full one. A summary written by a model was left out on purpose: it costs a call and can invent details.
+
 ---
 
 ## Decisions made during implementation
 
 | Decision | Spec | Rationale |
 |---|---|---|
+| Context is trimmed by fixed rules (old tool results, then old turns), not by a model-written summary | 19 | A summary costs a model call and can state something the customer never said; the fixed order is deterministic, free and testable. |
+| The compaction applies only to what is sent, never to what is saved | 19 | The saved conversation is the record for export and replay; the verification state is in code, so shortening the sent history cannot weaken the identity check. |
 | The CI runs on Linux with Python 3.11 and 3.12 and no secret | 18 | It checks the project from a clean checkout on a system other than the author machine (paths, line endings, the accent in the name of the manual) without exposing the key. |
 | The MCP server is written by hand and the official SDK is only a one-off check | 17 | A tools-only server needs four methods; a hand-written one matches the no-framework agent loop, adds no dependency and is covered by unit tests. The SDK client confirmed that it interoperates. |
 | One verification state per server process | 17 | An MCP client is one conversation over stdio; the identity rules and the attempt limit then behave as in the chat. |

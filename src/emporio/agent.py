@@ -7,6 +7,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
+from emporio.context import MAX_HISTORY_CHARS, compact_history
 from emporio.llm import ChatClient
 from emporio.metrics import TurnMetrics
 from emporio.tools import Toolset
@@ -47,15 +48,19 @@ class Agent:
         *,
         max_tool_rounds: int = 6,
         clock: Callable[[], float] = time.perf_counter,
+        max_history_chars: int = MAX_HISTORY_CHARS,
     ) -> None:
         self._client = client
         self._toolset = toolset
         self._system_prompt = system_prompt
         self._max_tool_rounds = max_tool_rounds
         self._clock = clock
+        self._max_history_chars = max_history_chars
 
     def reply(self, history: Sequence[dict[str, Any]], user_text: str) -> AgentTurn:
         started = self._clock()
+        # Only what is sent is shortened; the caller keeps (and saves) the whole conversation.
+        sent_history = compact_history(history, self._max_history_chars)
         usage_before = _usage(self._client)
         new: list[dict[str, Any]] = [{"role": "user", "content": user_text}]
         records: list[ToolCallRecord] = []
@@ -77,7 +82,7 @@ class Agent:
 
         for _ in range(self._max_tool_rounds):
             # Rebuilt on every call so the date and the open/closed status are never stale.
-            messages = [{"role": "system", "content": self._system_prompt()}, *history, *new]
+            messages = [{"role": "system", "content": self._system_prompt()}, *sent_history, *new]
             assistant = self._client.chat(messages, self._toolset.schemas)
             model_calls += 1
             calls = assistant.get("tool_calls")
