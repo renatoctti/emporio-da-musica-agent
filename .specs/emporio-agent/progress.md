@@ -212,7 +212,7 @@
 - Answers carry cards drawn from the tool results: product (list price struck through only under a promotion, discount, installment, PIX line, stock), a short product list, the order with its three steps and a copy button for the tracking code, the ticket and the manual sections used. Follow-up questions appear under the last answer. A list that only repeats a product card is dropped.
 - The card logic is a pure file (cards.js) tested from pytest through Node with the real tool results (19 tests; skipped when Node is missing, CI has it). The browser formats the numbers it receives and computes none.
 - /loja is a fictional store page with the chat as a widget in an iframe of the same origin; for that the CSP of the pages changed from frame-ancestors none to self.
-- Checked in Chrome (dark theme): welcome screen, product answer, order answer with a late estimate, the widget. Not checked on a real phone; the screenshots in docs/ are retaken in the README spec.
+- Checked in Chrome in both themes: welcome screen, product answer, order answer with a late estimate, developer mode, the widget on /loja, no console errors. Not checked on a real phone. The three screenshots in docs/ were retaken with the new interface.
 
 ---
 
