@@ -131,6 +131,7 @@ _KIND = {
     "get_order_status": "data",
     "list_my_orders": "data",
     "get_policy_sections": "policy",
+    "search_policies": "policy",
     "verify_customer": "identity",
     "check_return_eligibility": "rules",
     "open_handoff": "handoff",
@@ -141,6 +142,7 @@ _TITLE = {
     "get_order_status": "Consultou o pedido",
     "list_my_orders": "Listou os pedidos do cliente",
     "get_policy_sections": "Consultou o manual",
+    "search_policies": "Buscou no manual",
     "verify_customer": "Verificou a identidade",
     "check_return_eligibility": "Aplicou as regras de devolução",
     "open_handoff": "Abriu atendimento humano",
@@ -221,6 +223,23 @@ def _summary_policy(args: dict[str, Any], result: dict[str, Any]) -> str:
     return "itens " + ", ".join(s["id"] for s in sections)
 
 
+_SEARCH_METHOD = {
+    "bm25": "palavras",
+    "embeddings": "significado",
+    "hybrid": "significado e palavras",
+}
+
+
+def _summary_policy_search(args: dict[str, Any], result: dict[str, Any]) -> str:
+    sections = result.get("sections", [])
+    if not sections:
+        return "nada encontrado"
+    ids = ", ".join(s["id"] for s in sections)
+    found = f"item {ids}" if len(sections) == 1 else f"itens {ids}"
+    method = _SEARCH_METHOD.get(result.get("method", ""))
+    return f"{method} · {found}" if method else found
+
+
 def _summary_verify(args: dict[str, Any], result: dict[str, Any]) -> str:
     order = f"pedido {args.get('order_id')}"
     if result.get("verified"):
@@ -249,6 +268,7 @@ _SUMMARIES: dict[str, Callable[[dict[str, Any], dict[str, Any]], str]] = {
         f"{r.get('name', '')} · {_AVAILABILITY.get(r.get('availability'), '')}"
     ),
     "get_policy_sections": _summary_policy,
+    "search_policies": _summary_policy_search,
     "verify_customer": _summary_verify,
     "get_order_status": lambda a, r: (
         f"pedido {r.get('order_id')} · {_ORDER_STATUS.get(r.get('status'), '')}"

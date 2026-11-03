@@ -10,106 +10,101 @@
 <script src="/static/theme.js"></script>
 <script src="/static/app.js" defer></script>
 </head>
-<body>
+<body data-dev="off">
 <svg class="sprite" aria-hidden="true" focusable="false">
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
   <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
-  <symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
-  <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M8 8l-4 4 4 4M16 8l4 4-4 4M14 5l-4 14"/></symbol>
   <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
-  <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5.5 9.5A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.5L14 9V3M7.5 15h9"/></symbol>
 </svg>
 
 <div class="app">
-  <header class="topbar">
-    <div class="brand">
-      <svg class="logo" aria-hidden="true" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-      <div class="brand-text">
-        <h1 class="brand-name">Empório da Música</h1>
-        <p class="brand-sub">Atendimento virtual · Melô</p>
+  <section class="chat" aria-label="Conversa com a Melô">
+    <header class="chat-head">
+      <div class="head-who">
+        <div class="avatar avatar-lg" aria-hidden="true"><span>M</span><span class="presence"></span></div>
+        <div class="head-text">
+          <h1 class="head-name">Melô</h1>
+          <p class="head-status" id="head-status">Assistente virtual · Empório da Música</p>
+        </div>
       </div>
-    </div>
-    <div class="status">
-      <span class="chip" id="store-chip" data-state="unknown"><span class="dot" aria-hidden="true"></span><span id="store-text">Carregando</span></span>
-      <span class="chip chip-quiet" id="ref-chip" hidden><span id="ref-text"></span></span>
-    </div>
-    <div class="actions">
-      <button class="btn" id="btn-test" type="button" aria-label="Dados de teste" title="Dados de teste"><svg class="icon"><use href="#i-flask"/></svg><span class="btn-label">Dados de teste</span></button>
-      <div class="seg" role="group" aria-label="Tema">
-        <button type="button" data-theme-choice="system" aria-pressed="true" aria-label="Seguir o tema do sistema" title="Seguir o tema do sistema"><svg class="icon"><use href="#i-monitor"/></svg></button>
-        <button type="button" data-theme-choice="light" aria-pressed="false" aria-label="Tema claro" title="Tema claro"><svg class="icon"><use href="#i-sun"/></svg></button>
-        <button type="button" data-theme-choice="dark" aria-pressed="false" aria-label="Tema escuro" title="Tema escuro"><svg class="icon"><use href="#i-moon"/></svg></button>
+      <div class="head-actions">
+        <button class="icon-btn" id="btn-info" type="button" aria-label="Informações da loja" title="Informações da loja"><svg class="icon"><use href="#i-info"/></svg></button>
+        <button class="icon-btn" id="btn-theme" type="button" aria-label="Trocar o tema" title="Trocar o tema"><svg class="icon"><use id="theme-icon" href="#i-monitor"/></svg></button>
+        <button class="icon-btn" id="btn-new" type="button" aria-label="Nova conversa" title="Nova conversa"><svg class="icon"><use href="#i-plus"/></svg></button>
+        <button class="btn-dev" id="btn-dev" type="button" aria-pressed="false" aria-controls="side" title="Modo desenvolvedor: mostra como a Melô decidiu cada resposta"><svg class="icon"><use href="#i-code"/></svg><span class="btn-label">Modo dev</span></button>
       </div>
-      <button class="btn btn-primary" id="btn-new" type="button" aria-label="Nova conversa" title="Nova conversa"><svg class="icon"><use href="#i-plus"/></svg><span class="btn-label">Nova conversa</span></button>
-      <button class="btn" id="btn-panel" type="button" aria-expanded="true" aria-controls="side" aria-label="Como decidiu" title="Mostrar ou recolher o painel Como a Melô decidiu"><svg class="icon panel-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path class="pane-fill" d="M15 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4z"/></svg><span class="btn-label">Como decidiu</span></button>
-    </div>
-  </header>
+    </header>
 
-  <main class="layout">
-    <section class="chat" aria-label="Conversa com a Melô">
-      <div class="scroll" id="scroll">
-        <div class="column">
-          <section class="hero" id="hero">
-            <p class="eyebrow">Atendimento virtual</p>
-            <h2 class="hero-title">Como posso ajudar?</h2>
-            <p class="hero-text">Consulto o catálogo, o manual de políticas e os pedidos, e chamo uma pessoa da equipe quando preciso. No painel Como decidiu, você vê o caminho de cada resposta.</p>
-            <ul class="suggestions" id="suggestions"></ul>
-          </section>
-          <div class="log" id="log" role="log" aria-live="polite" aria-label="Mensagens"></div>
-        </div>
+    <div class="scroll" id="scroll">
+      <div class="column">
+        <p class="day"><span id="day-text">Hoje</span></p>
+        <div class="log" id="log" role="log" aria-live="polite" aria-label="Mensagens"></div>
       </div>
-      <div class="composer-wrap">
-        <div class="column">
-          <p class="verified" id="verified" hidden><svg class="icon"><use href="#i-check"/></svg><span id="verified-text"></span></p>
-          <form class="composer" id="form" autocomplete="off">
-            <label class="sr-only" for="input">Mensagem</label>
-            <textarea id="input" rows="1" maxlength="2000" placeholder="Escreva sua mensagem"></textarea>
-            <button class="send" id="send" type="submit" disabled>Enviar</button>
-          </form>
-          <p class="hint">Enter envia · Shift + Enter quebra a linha</p>
-        </div>
-      </div>
-    </section>
+    </div>
 
-    <aside class="side" id="side" aria-label="Painel lateral">
-      <div class="side-head">
-        <div class="tabs" role="tablist" aria-label="Painel">
-          <button type="button" role="tab" id="tab-trace" aria-selected="true" aria-controls="pane-trace">Como a Melô decidiu</button>
-          <button type="button" role="tab" id="tab-store" aria-selected="false" aria-controls="pane-store" tabindex="-1">Painel da loja</button>
-        </div>
-        <button class="icon-btn" id="btn-close" type="button" aria-label="Recolher painel" title="Recolher painel"><svg class="icon"><use href="#i-close"/></svg></button>
+    <div class="composer-wrap">
+      <p class="verified" id="verified" hidden><svg class="icon"><use href="#i-check"/></svg><span id="verified-text"></span></p>
+      <form class="composer" id="form" autocomplete="off">
+        <label class="sr-only" for="input">Mensagem</label>
+        <textarea id="input" rows="1" maxlength="2000" placeholder="Digite sua mensagem"></textarea>
+        <button class="send" id="send" type="submit" aria-label="Enviar mensagem" title="Enviar" disabled><svg class="icon"><use href="#i-send"/></svg></button>
+      </form>
+    </div>
+  </section>
+
+  <aside class="side dev-only" id="side" aria-label="Modo desenvolvedor">
+    <div class="side-head">
+      <div class="tabs" role="tablist" aria-label="Painel do desenvolvedor">
+        <button type="button" role="tab" id="tab-trace" aria-selected="true" aria-controls="pane-trace">Decisões</button>
+        <button type="button" role="tab" id="tab-metrics" aria-selected="false" aria-controls="pane-metrics" tabindex="-1">Métricas</button>
+        <button type="button" role="tab" id="tab-tickets" aria-selected="false" aria-controls="pane-tickets" tabindex="-1">Chamados</button>
+        <button type="button" role="tab" id="tab-tests" aria-selected="false" aria-controls="pane-tests" tabindex="-1">Dados de teste</button>
       </div>
-      <div class="pane" id="pane-trace" role="tabpanel" aria-labelledby="tab-trace">
-        <p class="pane-intro">Cada resposta é montada com ferramentas do sistema. Estas são as consultas, na ordem em que aconteceram.</p>
-        <ul class="legend" id="legend"></ul>
-        <p class="empty" id="trace-empty">Nada por aqui ainda. Faça uma pergunta e mostro o caminho que a Melô seguiu.</p>
-        <ol class="trace" id="trace-list"></ol>
-      </div>
-      <div class="pane" id="pane-store" role="tabpanel" aria-labelledby="tab-store" hidden>
-        <section class="card" id="store-card" aria-label="A loja"></section>
-        <h2 class="pane-title">Chamados abertos</h2>
-        <p class="pane-intro">É o que a equipe da loja veria depois que a Melô encaminha um caso.</p>
-        <ul class="tickets" id="tickets"></ul>
-        <p class="empty" id="tickets-empty">Nenhum chamado aberto.</p>
-      </div>
-    </aside>
-  </main>
-  <button class="panel-tab" id="panel-tab" type="button" aria-controls="side" aria-label="Abrir o painel Como decidiu" title="Abrir o painel Como a Melô decidiu"><svg class="icon" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg><span class="panel-tab-label">Como decidiu</span></button>
+      <button class="icon-btn" id="btn-close" type="button" aria-label="Fechar o modo dev" title="Fechar o modo dev"><svg class="icon"><use href="#i-close"/></svg></button>
+    </div>
+
+    <div class="pane" id="pane-trace" role="tabpanel" aria-labelledby="tab-trace">
+      <p class="pane-intro">Cada resposta é montada com ferramentas do sistema. Estas são as consultas, na ordem em que aconteceram.</p>
+      <ul class="legend" id="legend"></ul>
+      <p class="empty" id="trace-empty">Nada por aqui ainda. Faça uma pergunta e mostro o caminho que a Melô seguiu.</p>
+      <ol class="trace" id="trace-list"></ol>
+    </div>
+
+    <div class="pane" id="pane-metrics" role="tabpanel" aria-labelledby="tab-metrics" hidden>
+      <p class="pane-intro">Tempo, consultas e tokens de cada resposta desta conversa.</p>
+      <p class="empty" id="metrics-empty">Sem medições ainda.</p>
+      <dl class="facts" id="metrics-summary"></dl>
+      <ol class="turn-metrics" id="metrics-list"></ol>
+    </div>
+
+    <div class="pane" id="pane-tickets" role="tabpanel" aria-labelledby="tab-tickets" hidden>
+      <p class="pane-intro">É o que a equipe da loja veria depois que a Melô encaminha um caso.</p>
+      <ul class="tickets" id="tickets"></ul>
+      <p class="empty" id="tickets-empty">Nenhum chamado aberto.</p>
+    </div>
+
+    <div class="pane" id="pane-tests" role="tabpanel" aria-labelledby="tab-tests" hidden>
+      <p class="pane-intro">São clientes fictícios do arquivo de dados da loja. A Melô só mostra um pedido depois que você informa o número e o e-mail ou telefone cadastrados nele.</p>
+      <ul class="testers" id="test-list"></ul>
+    </div>
+  </aside>
 </div>
 
 <div class="backdrop" id="backdrop" hidden></div>
 
-<dialog id="test-dialog" aria-labelledby="test-title">
+<dialog id="info-dialog" aria-labelledby="info-title">
   <div class="dialog-body">
     <div class="dialog-head">
-      <h2 id="test-title">Dados para testar</h2>
-      <button class="icon-btn" id="test-close" type="button" aria-label="Fechar"><svg class="icon"><use href="#i-close"/></svg></button>
+      <h2 id="info-title">Sobre a loja</h2>
+      <button class="icon-btn" id="info-close" type="button" aria-label="Fechar"><svg class="icon"><use href="#i-close"/></svg></button>
     </div>
-    <p class="pane-intro">São clientes fictícios do arquivo de dados da loja. A Melô só mostra um pedido depois que você informa o número e o e-mail ou telefone cadastrados nele.</p>
-    <ul class="testers" id="test-list"></ul>
+    <section class="card" id="store-card" aria-label="A loja"></section>
   </div>
 </dialog>
 </body>

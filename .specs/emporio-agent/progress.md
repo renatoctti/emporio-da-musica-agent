@@ -24,6 +24,7 @@
 | 12-web-interface | 🟢 Done | 57 tests; manual pass in Chrome (desktop and a 390 px frame, both themes) |
 | 13-policy-search | 🟢 Done | 34-question gold set; BM25 recall@3 0.85, embeddings 0.97, hybrid 0.97 |
 | 14-turn-metrics | 🟢 Done | metrics table, emporio stats, web and eval fields; 396 tests |
+| 15-chat-ui-dev-mode | 🟢 Done | chat-first page, developer mode, metrics tab; 400 tests; browser pass in both themes |
 
 > Legend: 🔴 not started · 🟡 in progress · 🟢 done · ❌ blocked
 
@@ -145,12 +146,24 @@
 - The web chat endpoint returns the metrics of the turn and the state returns them for every turn, so a reload keeps them. The evaluation report has latency and tokens per case and the mean latency; the panel that shows them comes with the interface redesign.
 - Test first: tests/test_metrics.py came before the code. One existing web test compared the turns of the state with an exact dictionary and had to gain the new metrics key, which is the change the spec asks for. Ruff asked for a default factory on the AgentTurn field and for an instance attribute in a test helper.
 
+### 2026-11-02: spec 15, chat-first interface with a developer mode
+
+- Requested by the author: the page should look like a real conversation, and the panel that explains how the assistant decided belongs to a developer, not to the customer. The page was rewritten (HTML, CSS and JavaScript); no Python server code changed except the trace mapping of the new search tool.
+- The default view is a messaging chat: a header with the avatar, a presence dot and the store status, a day separator (it says "data simulada" when the date is fixed), the greeting of Melo as the first message with quick-reply buttons, bubbles with the time of each message sent in the visit, a typing indicator and a rounded composer with an icon send button. The theme is one header button that cycles system, light and dark. The store hours and contacts moved to an information dialog.
+- Everything about the reasoning moved to a developer mode, off by default, behind a "Modo dev" button in the header. It opens a panel with four tabs (Decisoes, Metricas, Chamados, Dados de teste), and shows the source tags and a line with time, tool calls, tokens and cost under each answer. On a narrow screen the panel is a drawer, closed by default. The choice is remembered on a wide screen.
+- Checked in a real browser (Chrome, with real model calls) in both themes, in developer mode and in the customer view, and at 500 px in a headless Chrome. The drawer on a narrow screen was checked by reading the CSS only, because the browser tools could not emulate a phone viewport and the page refuses to be embedded in a frame; this is stated here on purpose.
+- Test first: five static tests for the new structure replaced the two tests of the old panel. They read the files, so they cannot prove the behavior; that is what the browser pass is for. The new search tool needed its own title and summary in the trace (policy, "Buscou no manual", with the method used), covered by a new test.
+- Known limit: messages restored after a reload have no time, because the server does not store one per turn.
+
 ---
 
 ## Decisions made during implementation
 
 | Decision | Spec | Rationale |
 |---|---|---|
+| The developer mode is off by default and the explanation panel left the customer view | 15 | A customer never sees how an assistant decides; the default page should look like a real chat. The evaluators still get the trace one click away, and the README says where. |
+| Developer mode and the drawer share one state (the body data-dev attribute) | 15 | One switch for the panel, the tags and the metrics lines keeps the CSS small and avoids two controls that can disagree. |
+| Restored messages show no time | 15 | The server does not store a time per turn; adding it would change the API for a cosmetic gain. |
 | Cost in dollars is optional and comes from two environment variables | 14 | The model price is not in the data and changes; a wrong number printed as fact would be worse than "not configured". |
 | Latency is the wall time of the whole turn, not only the model time | 14 | It is what the customer waits for; tool time is tiny here and one number is easier to read. |
 | Token counts come from the client counter by difference, and fake clients count as zero | 14 | Avoids changing the ChatClient protocol and every test double. |

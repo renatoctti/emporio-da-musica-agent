@@ -8,11 +8,16 @@
     rules: "Regras · devolução e garantia",
     handoff: "Atendimento · equipe humana",
   };
+  var GREETING = "Oi! Eu sou a Melô, assistente virtual da Empório da Música. Como posso ajudar?";
   var THEME_KEY = "emporio-theme";
-  var PANEL_KEY = "emporio-panel";
+  var DEV_KEY = "emporio-dev";
+  var TABS = ["trace", "metrics", "tickets", "tests"];
+  var THEMES = ["system", "light", "dark"];
+  var THEME_ICON = { system: "#i-monitor", light: "#i-sun", dark: "#i-moon" };
+  var THEME_NAME = { system: "do sistema", light: "claro", dark: "escuro" };
   var narrowQuery = window.matchMedia("(max-width: 900px)");
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var app = { info: null, turns: [], busy: false };
+  var app = { info: null, turns: [], busy: false, theme: "system" };
 
   function $(selector, root) { return (root || document).querySelector(selector); }
 
@@ -42,6 +47,21 @@
         return data;
       });
     });
+  }
+
+  // ---- small formatters ----
+  function clock(date) { return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); }
+  function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
+  function seconds(ms) { return (ms / 1000).toFixed(1).replace(".", ",") + " s"; }
+  function money(usd) { return "US$ " + usd.toFixed(4).replace(".", ","); }
+
+  function metricsText(m) {
+    if (!m) return "";
+    var parts = [seconds(m.latency_ms), plural(m.tool_calls, "consulta", "consultas")];
+    var tokens = m.prompt_tokens + m.completion_tokens;
+    if (tokens) parts.push(tokens.toLocaleString("pt-BR") + " tokens");
+    if (m.cost_usd != null) parts.push(money(m.cost_usd));
+    return parts.join(" · ");
   }
 
   // ---- reply text: **bold**, `code`, bullet and numbered lists, paragraphs ----
@@ -83,8 +103,10 @@
   // ---- conversation ----
   function avatar() { return h("div", { class: "avatar", "aria-hidden": "true", text: "M" }); }
 
-  function userMessage(text) {
-    return h("article", { class: "msg msg-user" }, h("div", { class: "bubble", text: text }));
+  function userMessage(text, at) {
+    var stack = h("div", { class: "stack" }, h("div", { class: "bubble", text: text }),
+      at ? h("div", { class: "meta" }, h("span", { text: clock(at) })) : null);
+    return h("article", { class: "msg msg-user" }, stack);
   }
 
   function kindsOf(trace) {
@@ -93,17 +115,37 @@
     return kinds.length ? kinds : ["none"];
   }
 
+  // The time is for everybody; the metrics line and the source tags are only for the developer mode.
   function botMessage(turn, index) {
-    var tags = h("div", { class: "tags" });
+    var meta = h("div", { class: "meta" },
+      turn.at ? h("span", { text: clock(turn.at) }) : null,
+      turn.metrics ? h("span", { class: "dev-line dev-only", text: metricsText(turn.metrics) }) : null);
+    var tags = h("div", { class: "tags dev-only" });
     kindsOf(turn.trace).forEach(function (kind) {
-      tags.append(h("button", { type: "button", class: "tag k-" + kind, title: "Ver no painel", onclick: function () { focusTurn(index); } }, KINDS[kind]));
+      tags.append(h("button", { type: "button", class: "tag k-" + kind, title: "Ver em Decisões", onclick: function () { focusTurn(index); } }, KINDS[kind]));
     });
-    return h("article", { class: "msg msg-bot", id: "turn-" + index }, avatar(), h("div", { class: "who", text: "Melô" }), richText(turn.reply), tags);
+    var stack = h("div", { class: "stack" }, h("div", { class: "bubble" }, richText(turn.reply)), meta.childNodes.length ? meta : null, tags);
+    return h("article", { class: "msg msg-bot", id: "turn-" + index }, avatar(), stack);
+  }
+
+  function greetingMessage() {
+    return h("article", { class: "msg msg-bot", id: "greeting" }, avatar(),
+      h("div", { class: "stack" }, h("div", { class: "bubble" }, h("div", { class: "prose" }, h("p", { text: GREETING })))));
+  }
+
+  // Quick replies under the greeting; they go away with the first customer message.
+  function chipsNode() {
+    var box = h("div", { class: "chips", id: "chips" });
+    app.info.suggestions.forEach(function (s) {
+      box.append(h("button", { type: "button", class: "chip-btn", onclick: function () { send(s.text); } }, s.label));
+    });
+    return box;
   }
 
   function typingNode() {
-    return h("div", { class: "msg msg-bot", id: "typing" }, avatar(), h("div", { class: "who", text: "Melô" }),
-      h("div", { class: "typing", role: "status", "aria-label": "A Melô está escrevendo" }, h("span"), h("span"), h("span")));
+    return h("article", { class: "msg msg-bot", id: "typing" }, avatar(),
+      h("div", { class: "stack" }, h("div", { class: "bubble", role: "status", "aria-label": "A Melô está digitando" },
+        h("div", { class: "typing" }, h("span"), h("span"), h("span")))));
   }
 
   function scrollEnd() {
@@ -113,11 +155,11 @@
 
   function renderLog() {
     var log = $("#log");
-    log.replaceChildren();
+    log.replaceChildren(greetingMessage());
+    if (!app.turns.length && app.info) log.append(chipsNode());
     app.turns.forEach(function (turn, index) {
-      log.append(userMessage(turn.user), botMessage(turn, index));
+      log.append(userMessage(turn.user, turn.at), botMessage(turn, index));
     });
-    $("#hero").hidden = app.turns.length > 0;
   }
 
   function showError(message, text) {
@@ -131,10 +173,11 @@
     if (app.busy || !text) return Promise.resolve();
     app.busy = true;
     updateSend();
-    $("#hero").hidden = true;
+    var chips = $("#chips");
+    if (chips) chips.remove();
     var log = $("#log");
     if (!retry) {
-      log.append(userMessage(text));
+      log.append(userMessage(text, new Date()));
       $("#input").value = "";
       autosize();
     }
@@ -143,11 +186,12 @@
     scrollEnd();
     return api("/api/chat", { text: text }).then(function (result) {
       typing.remove();
-      var turn = { user: text, reply: result.reply, trace: result.trace };
+      var turn = { user: text, reply: result.reply, trace: result.trace, metrics: result.metrics, at: new Date() };
       app.turns.push(turn);
       log.append(botMessage(turn, app.turns.length - 1));
       setVerified(result.verified);
       renderTrace();
+      renderMetrics();
       refreshTickets();
     }).catch(function (error) {
       typing.remove();
@@ -176,7 +220,7 @@
     if (verified) $("#verified-text").textContent = "Identidade confirmada: " + verified.first_name;
   }
 
-  // ---- side panel: how the agent decided ----
+  // ---- developer panel: how the agent decided ----
   function detailText(item) {
     var text = JSON.stringify({ chamada: item.name, argumentos: item.arguments, resultado: item.result }, null, 2);
     return item.truncated ? text + "\n\n(resultado cortado)" : text;
@@ -208,7 +252,7 @@
   }
 
   function focusTurn(index) {
-    openPanel(true);
+    setDev(true);
     setTab("trace");
     var node = $("#trace-" + index);
     if (!node) return;
@@ -218,8 +262,42 @@
     node.classList.add("flash");
   }
 
+  // ---- developer panel: metrics ----
+  function renderMetrics() {
+    var rows = [];
+    app.turns.forEach(function (turn, index) { if (turn.metrics) rows.push({ n: index + 1, m: turn.metrics }); });
+    var summary = $("#metrics-summary");
+    var list = $("#metrics-list");
+    summary.replaceChildren();
+    list.replaceChildren();
+    $("#metrics-empty").hidden = rows.length > 0;
+    if (!rows.length) return;
+
+    var total = 0, slowest = 0, tools = 0, input = 0, output = 0, cost = 0, costKnown = true;
+    rows.forEach(function (row) {
+      total += row.m.latency_ms;
+      slowest = Math.max(slowest, row.m.latency_ms);
+      tools += row.m.tool_calls;
+      input += row.m.prompt_tokens;
+      output += row.m.completion_tokens;
+      if (row.m.cost_usd == null) costKnown = false; else cost += row.m.cost_usd;
+    });
+    var facts = [
+      ["Respostas medidas", String(rows.length)],
+      ["Tempo médio", seconds(total / rows.length)],
+      ["Mais lenta", seconds(slowest)],
+      ["Consultas por resposta", (tools / rows.length).toFixed(1).replace(".", ",")],
+      ["Tokens", input.toLocaleString("pt-BR") + " entrada · " + output.toLocaleString("pt-BR") + " saída"],
+      ["Custo estimado", costKnown ? money(cost) : "preços não configurados (LLM_PRICE_IN_PER_M)"],
+    ];
+    facts.forEach(function (fact) { summary.append(h("dt", { text: fact[0] }), h("dd", { text: fact[1] })); });
+    rows.forEach(function (row) {
+      list.append(h("li", {}, h("strong", { text: "Resposta " + row.n }), h("span", { text: metricsText(row.m) })));
+    });
+  }
+
   function setTab(name) {
-    ["trace", "store"].forEach(function (tab) {
+    TABS.forEach(function (tab) {
       var selected = tab === name;
       var button = $("#tab-" + tab);
       button.setAttribute("aria-selected", String(selected));
@@ -228,7 +306,7 @@
     });
   }
 
-  // ---- side panel: the store ----
+  // ---- developer panel: tickets and test data; and the store information for everybody ----
   function formatDue(iso) {
     var d = new Date(iso);
     var two = function (n) { return String(n).padStart(2, "0"); };
@@ -258,32 +336,6 @@
     });
   }
 
-  // ---- page chrome ----
-  function applyInfo(info) {
-    app.info = info;
-    var chip = $("#store-chip");
-    chip.dataset.state = info.store.open ? "open" : "closed";
-    $("#store-text").textContent = info.store.status_text;
-    $("#ref-chip").hidden = !info.reference.simulated;
-    $("#ref-text").textContent = "Simulando " + info.reference.label;
-    var list = $("#suggestions");
-    list.replaceChildren();
-    info.suggestions.forEach(function (s) {
-      list.append(h("li", {}, h("button", { type: "button", class: "suggest k-" + s.kind, onclick: function () { send(s.text); } },
-        h("span", { class: "suggest-dot", "aria-hidden": "true" }), h("span", { class: "suggest-body" }, h("span", { class: "suggest-label", text: s.label }), h("span", { class: "suggest-text", text: s.topic + " · " + s.text })), h("span", { class: "suggest-chevron", "aria-hidden": "true", text: "›" }))));
-    });
-    var legend = $("#legend");
-    legend.replaceChildren();
-    Object.keys(LEGEND).forEach(function (kind) { legend.append(h("li", { class: "k-" + kind, text: LEGEND[kind] })); });
-    app.turns = info.turns;
-    renderLog();
-    renderTrace();
-    renderStore();
-    renderTesters(info.test_customers);
-    setVerified(info.verified);
-    return refreshTickets();
-  }
-
   function renderTesters(customers) {
     var list = $("#test-list");
     list.replaceChildren();
@@ -291,7 +343,7 @@
       list.append(h("li", { class: "tester" }, h("h3", { text: c.name }), h("p", { text: c.note }),
         h("p", {}, "Pedido ", h("code", { text: String(c.order_id) }), " · e-mail ", h("code", { text: c.email })),
         h("button", { type: "button", class: "btn", onclick: function () {
-          $("#test-dialog").close();
+          if (narrowQuery.matches) setDev(false);
           var input = $("#input");
           input.value = "Meu pedido é o " + c.order_id + " e meu e-mail é " + c.email + ".";
           autosize();
@@ -301,39 +353,60 @@
     });
   }
 
+  // ---- page chrome ----
+  function applyInfo(info) {
+    app.info = info;
+    var status = info.store.status_text;
+    $("#head-status").textContent = "Loja " + status.charAt(0).toLowerCase() + status.slice(1);
+    $("#day-text").textContent = info.reference.simulated ? info.reference.label + " · data simulada" : "Hoje";
+    var legend = $("#legend");
+    legend.replaceChildren();
+    Object.keys(LEGEND).forEach(function (kind) { legend.append(h("li", { class: "k-" + kind, text: LEGEND[kind] })); });
+    app.turns = info.turns;
+    renderLog();
+    renderTrace();
+    renderMetrics();
+    renderStore();
+    renderTesters(info.test_customers);
+    setVerified(info.verified);
+    return refreshTickets();
+  }
+
   function readSaved(key) {
     try { return localStorage.getItem(key); } catch (error) { return null; }
   }
 
-  // On a wide screen the panel is a column that can be collapsed (and the choice is remembered);
-  // on a narrow one it is a drawer that always starts closed.
-  function openPanel(open, remember) {
-    document.body.dataset.panel = open ? "open" : "closed";
-    $("#btn-panel").setAttribute("aria-expanded", String(open));
-    $("#backdrop").hidden = !(open && narrowQuery.matches);
+  // Developer mode: a column next to the chat on a wide screen (the choice is remembered), a drawer
+  // that always starts closed on a narrow one.
+  function setDev(on, remember) {
+    document.body.dataset.dev = on ? "on" : "off";
+    $("#btn-dev").setAttribute("aria-pressed", String(on));
+    $("#backdrop").hidden = !(on && narrowQuery.matches);
     if (remember !== false && !narrowQuery.matches) {
-      try { localStorage.setItem(PANEL_KEY, open ? "open" : "closed"); } catch (error) { /* the choice then lasts until the page closes */ }
+      try { localStorage.setItem(DEV_KEY, on ? "on" : "off"); } catch (error) { /* the choice then lasts until the page closes */ }
     }
-    if (open && narrowQuery.matches) $("#tab-trace").focus();
+    if (on && narrowQuery.matches) $("#tab-trace").focus();
   }
 
-  function initPanel() {
-    var apply = function () { openPanel(narrowQuery.matches ? false : readSaved(PANEL_KEY) !== "closed", false); };
+  function initDev() {
+    var apply = function () { setDev(narrowQuery.matches ? false : readSaved(DEV_KEY) === "on", false); };
     apply();
     narrowQuery.addEventListener("change", apply);
   }
 
   function applyTheme(choice) {
     var root = document.documentElement;
+    app.theme = choice;
     if (choice === "system") delete root.dataset.theme;
     else root.dataset.theme = choice;
     try {
       if (choice === "system") localStorage.removeItem(THEME_KEY);
       else localStorage.setItem(THEME_KEY, choice);
     } catch (error) { /* storage can be blocked; the choice then lasts until the page closes */ }
-    document.querySelectorAll("[data-theme-choice]").forEach(function (button) {
-      button.setAttribute("aria-pressed", String(button.dataset.themeChoice === choice));
-    });
+    $("#theme-icon").setAttribute("href", THEME_ICON[choice]);
+    var label = "Tema " + THEME_NAME[choice] + ". Clique para trocar.";
+    $("#btn-theme").setAttribute("aria-label", label);
+    $("#btn-theme").setAttribute("title", label);
   }
 
   function newConversation() {
@@ -349,32 +422,30 @@
     });
     $("#form").addEventListener("submit", function (event) { event.preventDefault(); send(input.value); });
     $("#btn-new").addEventListener("click", newConversation);
-    $("#btn-test").addEventListener("click", function () { $("#test-dialog").showModal(); });
-    $("#test-close").addEventListener("click", function () { $("#test-dialog").close(); });
-    $("#btn-panel").addEventListener("click", function () { openPanel(document.body.dataset.panel !== "open"); });
-    $("#panel-tab").addEventListener("click", function () { openPanel(true); $("#tab-trace").focus(); });
-    $("#btn-close").addEventListener("click", function () { openPanel(false); $("#btn-panel").focus(); });
-    $("#backdrop").addEventListener("click", function () { openPanel(false); });
-    document.addEventListener("keydown", function (event) { if (event.key === "Escape" && narrowQuery.matches && document.body.dataset.panel === "open") openPanel(false); });
-    $("#tab-trace").addEventListener("click", function () { setTab("trace"); });
-    $("#tab-store").addEventListener("click", function () { setTab("store"); refreshTickets(); });
-    $(".tabs").addEventListener("keydown", function (event) {
-      if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
-        var next = $("#tab-trace").getAttribute("aria-selected") === "true" ? "store" : "trace";
-        setTab(next);
-        $("#tab-" + next).focus();
-      }
+    $("#btn-info").addEventListener("click", function () { $("#info-dialog").showModal(); });
+    $("#info-close").addEventListener("click", function () { $("#info-dialog").close(); });
+    $("#btn-theme").addEventListener("click", function () { applyTheme(THEMES[(THEMES.indexOf(app.theme) + 1) % THEMES.length]); });
+    $("#btn-dev").addEventListener("click", function () { setDev(document.body.dataset.dev !== "on"); });
+    $("#btn-close").addEventListener("click", function () { setDev(false); $("#btn-dev").focus(); });
+    $("#backdrop").addEventListener("click", function () { setDev(false); });
+    document.addEventListener("keydown", function (event) { if (event.key === "Escape" && narrowQuery.matches && document.body.dataset.dev === "on") setDev(false); });
+    TABS.forEach(function (tab) {
+      $("#tab-" + tab).addEventListener("click", function () { setTab(tab); if (tab === "tickets") refreshTickets(); });
     });
-    document.querySelectorAll("[data-theme-choice]").forEach(function (button) {
-      button.addEventListener("click", function () { applyTheme(button.dataset.themeChoice); });
+    $(".tabs").addEventListener("keydown", function (event) {
+      if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+      var current = TABS.filter(function (tab) { return $("#tab-" + tab).getAttribute("aria-selected") === "true"; })[0];
+      var step = event.key === "ArrowRight" ? 1 : TABS.length - 1;
+      var next = TABS[(TABS.indexOf(current) + step) % TABS.length];
+      setTab(next);
+      $("#tab-" + next).focus();
     });
   }
 
   function start() {
-    var saved = null;
-    try { saved = localStorage.getItem(THEME_KEY); } catch (error) { saved = null; }
+    var saved = readSaved(THEME_KEY);
     applyTheme(saved === "light" || saved === "dark" ? saved : "system");
-    initPanel();
+    initDev();
     bind();
     updateSend();
     api("/api/state").then(applyInfo).catch(function (error) {

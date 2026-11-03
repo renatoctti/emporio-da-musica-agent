@@ -564,30 +564,76 @@ def test_the_real_server_answers_over_http_on_a_free_local_port():
     assert seen["refused"] == 403
 
 
-def test_the_side_panel_can_be_collapsed_at_every_width():
-    html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
-    script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
-    sheet = (STATIC_DIR / "app.css").read_text(encoding="utf-8")
-    # the controls exist on every width (they used to be marked as narrow-only)
+# --- spec 15: chat-first page and developer mode ---------------------------------------------
+
+
+def _page():
+    names = ("index.html", "app.js", "app.css")
+    return tuple((STATIC_DIR / name).read_text(encoding="utf-8") for name in names)
+
+
+def test_the_default_view_is_a_chat_with_a_greeting_and_quick_replies():
+    html, script, sheet = _page()
+    for part in ('class="chat-head"', 'role="log"', 'id="input"', 'id="send"', 'id="form"'):
+        assert part in html, part
+    assert "Eu sou a Melô" in script  # the first message of the conversation
+    assert (
+        'id: "chips"' in script or 'id="chips"' in script
+    )  # quick replies, removed after the first message
+    assert "typing" in script and ".typing" in sheet
+    assert "clock(" in script  # the time of the messages sent in this visit
+    assert ".bubble" in sheet
+
+
+def test_everything_about_the_reasoning_is_hidden_unless_developer_mode_is_on():
+    html, script, sheet = _page()
+    assert 'data-dev="off"' in html
+    assert 'class="side dev-only"' in html
+    assert "dev-only" in script  # the tags and the metrics line under each answer
+    import re
+
+    assert re.search(r"\.dev-only\s*\{\s*display:\s*none", sheet)
+    assert 'body[data-dev="on"]' in sheet
+
+
+def test_the_developer_mode_control_and_its_four_tabs():
+    html, script, _ = _page()
+    assert 'id="btn-dev"' in html and 'aria-pressed="false"' in html
+    assert "Modo dev" in html
+    assert "emporio-dev" in script
+    assert 'id="tab-trace"' in html and 'id="pane-trace"' in html
+    assert 'id="tab-metrics"' in html and 'id="pane-metrics"' in html
+    assert 'id="tab-tickets"' in html and 'id="pane-tickets"' in html
+    assert 'id="tab-tests"' in html and 'id="pane-tests"' in html
+    assert 'id="test-list"' in html and 'id="tickets"' in html
+
+
+def test_the_store_information_is_one_click_away_for_everyone():
+    html, _, _ = _page()
+    assert 'id="btn-info"' in html and 'id="info-dialog"' in html and 'id="store-card"' in html
+
+
+def test_the_theme_is_one_button_and_narrow_screens_get_a_drawer():
+    html, script, sheet = _page()
+    assert 'id="btn-theme"' in html and "emporio-theme" in script
     assert "only-narrow" not in html
-    assert 'id="btn-panel"' in html and 'aria-expanded="true"' in html
-    assert 'aria-label="Recolher painel"' in html
-    # the choice is remembered, and the page collapses on wide screens too
-    assert "emporio-panel" in script
-    assert 'body[data-panel="closed"] .side' in sheet
+    assert "@media (max-width: 900px)" in sheet and 'body[data-dev="on"] .side' in sheet
+    assert "Escape" in script
 
 
-def test_a_collapsed_panel_leaves_a_visible_tab_and_the_button_has_an_icon():
-    html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
-    script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
-    sheet = (STATIC_DIR / "app.css").read_text(encoding="utf-8")
-    assert 'id="panel-tab"' in html
-    assert (
-        "badge" not in html + script + sheet
-    )  # no counters on the button, the tab or the panel tabs
-    assert (
-        'class="pane-fill"' in html
-    )  # the icon of the header button, inline so the CSS reaches it
-    assert ".panel-tab" in sheet and 'body[data-panel="closed"] .panel-tab' in sheet
-    assert '[aria-expanded="false"] .pane-fill' in sheet
-    assert "#panel-tab" in script
+def test_a_policy_search_has_its_own_title_and_a_summary_that_names_the_method():
+    sections = [
+        {"id": "4.1", "title": "x", "text": "", "score": 1.0},
+        {"id": "8.1", "title": "y", "text": "", "score": 0.5},
+    ]
+    item = trace(
+        "search_policies",
+        {"query": "devolver sem usar"},
+        {"method": "hybrid", "sections": sections},
+    )
+    assert (item["kind"], item["title"]) == ("policy", "Buscou no manual")
+    assert item["summary"] == "significado e palavras · itens 4.1, 8.1"
+    one = trace("search_policies", {"query": "q"}, {"method": "bm25", "sections": sections[:1]})
+    assert one["summary"] == "palavras · item 4.1"
+    none = trace("search_policies", {"query": "q"}, {"method": "bm25", "sections": []})
+    assert none["summary"] == "nada encontrado"
