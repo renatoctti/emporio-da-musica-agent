@@ -1,5 +1,7 @@
 # Empório da Música: virtual assistant
 
+[![CI](https://github.com/renatoctti/emporio-da-musica-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/renatoctti/emporio-da-musica-agent/actions/workflows/ci.yml)
+
 ## Overview
 
 **Melô** is a text-message customer-service agent for Empório da Música, a fictional musical

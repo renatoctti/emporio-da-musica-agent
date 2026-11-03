@@ -27,6 +27,7 @@
 | 15-chat-ui-dev-mode | 🟢 Done | chat-first page, developer mode, metrics tab; 400 tests; browser pass in both themes |
 | 16-adversarial-eval | 🟢 Done | 12 adversarial cases; 11/12 first live run, E33 was a test design error and was fixed; 428 tests |
 | 17-mcp-server | 🟢 Done | emporio mcp over stdio, no new dependency; checked with the official SDK client; 450 tests |
+| 18-ci | 🟢 Done | GitHub Actions: ruff, format check and pytest on Python 3.11 and 3.12; 455 tests |
 
 > Legend: 🔴 not started · 🟡 in progress · 🟢 done · ❌ blocked
 
@@ -172,12 +173,19 @@
 - Finding during that check: with the embeddings switched off, the policy search for "posso devolver sem ter usado?" returns nothing, because BM25 does not link "devolver" to "devolução" in the manual. This is the lexical weakness measured in spec 13 (BM25 recall at 3 is 0.85); with a key the hybrid covers it. The README states it.
 - stdout carries only protocol messages and is flushed after every line, which a pipe needs.
 
+### 2026-11-02: spec 18, continuous integration
+
+- Added a GitHub Actions workflow (.github/workflows/ci.yml) that installs the project with the dev extras and runs ruff check, ruff format --check and pytest on Python 3.11 and 3.12, on every push to main and every pull request. It has read-only permissions, uses no secret and only the official checkout and setup-python actions. The README shows the status badge.
+- The workflow needs no key because the model, the embeddings and the clock are faked or fixed in the tests; the live evaluation is not part of it (it needs a key and costs money).
+- Test first: tests/test_ci.py reads the workflow (triggers, commands, matrix, permissions, only official actions) and the README badge. These tests read files, so the real proof is the first run on GitHub, which is checked right after the push and noted below.
+
 ---
 
 ## Decisions made during implementation
 
 | Decision | Spec | Rationale |
 |---|---|---|
+| The CI runs on Linux with Python 3.11 and 3.12 and no secret | 18 | It checks the project from a clean checkout on a system other than the author machine (paths, line endings, the accent in the name of the manual) without exposing the key. |
 | The MCP server is written by hand and the official SDK is only a one-off check | 17 | A tools-only server needs four methods; a hand-written one matches the no-framework agent loop, adds no dependency and is covered by unit tests. The SDK client confirmed that it interoperates. |
 | One verification state per server process | 17 | An MCP client is one conversation over stdio; the identity rules and the attempt limit then behave as in the chat. |
 | Case E33 checks that no internal error leaks instead of requiring a tool call | 16 | The first live run showed the agent safely refusing to parse the strange message; requiring a call would have punished a safe answer. |
