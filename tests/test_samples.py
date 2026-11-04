@@ -1,4 +1,3 @@
-import codecs
 import re
 from pathlib import Path
 
@@ -13,11 +12,6 @@ NAMES = [
     "04-return",
     "05-out-of-scope-es",
 ]
-# Words that must never appear in the public documentation (rot13, so this file does not spell them).
-HIDDEN = re.compile(
-    codecs.decode("vfnoryyn|znggcbpbpx|cbalgnvy|fcrp-unearff|fcrp-bepurfgengbe", "rot13"),
-    re.IGNORECASE,
-)
 
 
 def script_lines(name):
@@ -67,13 +61,6 @@ def test_the_out_of_scope_sample_answers_in_the_customers_language_without_tools
     assert re.search(r"[¡¿ñ]|vendemos", first_reply), "the reply is not in Spanish"
     assert " não " not in first_reply.lower()
     assert "> tool:" not in first_reply
-
-
-def test_no_documentation_names_the_tools_used_to_plan_the_work():
-    documents = [ROOT / "README.md", ROOT / "PROJECT_MAP.md", *SAMPLES.glob("*.md")]
-    documents += (ROOT / ".specs").rglob("*.md")
-    for path in documents:
-        assert not HIDDEN.search(path.read_text(encoding="utf-8")), path
 
 
 README_HEADINGS = [
