@@ -27,6 +27,10 @@ deadlines, who may see an order) is computed by code, not by the model.
 - A local web chat (`emporio web`) that looks like a messaging app, with a **developer mode**
   (the "Modo dev" button) that shows how each answer was decided.
 - The same tools served to any MCP client (`emporio mcp`).
+- In the web chat, answer cards (price, installments and stock of a product; the progress of an
+  order), thumbs up or down on each answer (stored with the conversation and listed by
+  `emporio feedback`), a demo store page with the chat as a widget (`/loja`), and an optional
+  webhook when a handoff ticket is opened.
 - An evaluation of 33 scenarios against a real model (21 routing cases and 12 adversarial ones)
   and an offline evaluation of the policy search.
 
@@ -45,7 +49,7 @@ cp .env.example .env             # Windows: copy .env.example .env
 # edit .env and set LLM_API_KEY
 emporio                          # or: python -m emporio
 emporio web                      # the same agent in the browser, http://127.0.0.1:8765
-python -m pytest -q              # about 470 tests, no API key needed
+python -m pytest -q              # about 520 tests, no API key needed
 ```
 
 The sample data ends in March 2026, so for realistic dates (delivery estimates, return windows)
@@ -77,6 +81,7 @@ Set in `.env` (see `.env.example`) or in the environment. Blank values count as 
 | `EMPORIO_TODAY` | system clock | Fixes "today" as `YYYY-MM-DD` (at 10:00). `--today` does the same per run. |
 | `EMPORIO_DATA_DIR` | `data/` | Folder with the CSVs and the manual PDF. |
 | `EMPORIO_DB_PATH` | `var/emporio.db` | SQLite file (git-ignored: it holds personal data). |
+| `HANDOFF_WEBHOOK_URL` | none | Optional `http` or `https` address that receives a small JSON message (`text`, protocol, category, summary, order id, session id, dates; never the customer's name, e-mail, phone or id) when a **new** handoff ticket is opened. A failure or a 3 s timeout is logged and ignored; the ticket is already stored. The summary is written by the model, so it can contain what the customer said. |
 
 ## Commands
 
@@ -90,6 +95,7 @@ Set in `.env` (see `.env.example`) or in the environment. Blank values count as 
 | `emporio stats [--session ID]` | Turns, lookups per turn, latency (mean, median, p95), tokens and the estimated cost, from the stored measurements. |
 | `emporio sessions` | List stored conversations. |
 | `emporio handoffs` | List open handoff tickets (what the store team would see). |
+| `emporio feedback [-o FILE]` | List the answers rated thumbs down in the web chat (session, turn, question, comment); with `-o`, write them as JSON candidates for the evaluation. A person still writes the check for each one. |
 | `emporio export ID [-o FILE]` | Render a conversation as Markdown, with the tool calls. |
 | `emporio replay SCRIPT [--today D] [-o FILE]` | Run a text file of customer messages through the agent and write the transcript. This is how the samples were made. |
 | `emporio data-report` | List the problems found in the CSV files and how many. |
@@ -100,8 +106,11 @@ Set in `.env` (see `.env.example`) or in the environment. Blank values count as 
 
 `emporio web` opens the same agent in the browser at `http://127.0.0.1:8765`. The default view is a
 chat like a messaging app: the greeting of Melô with quick replies, bubbles with the time of each
-message, a typing indicator, and the store hours behind an information button. Nothing about how
-the assistant decides is shown to the customer.
+message, a typing indicator, and the store hours behind an information button. Under an answer
+the customer sees cards drawn from what the tools returned (a product with its price, installments
+and stock; an order with its progress; a ticket with its protocol) and, when the answer came from
+the manual, a small card with the sections it used. Everything else about how the assistant decides
+is hidden from the customer.
 
 ![The chat in the light theme](docs/web-interface-light.jpg)
 
@@ -119,6 +128,13 @@ answer also shows the tags of its sources and one line with its time, lookups an
 
 - A theme button that cycles system, light and dark, remembered in the browser. Both themes are
   designed separately.
+- Thumbs up and down under each answer; clicking the pressed one removes the rating. Ratings are
+  stored per conversation and turn, and `emporio feedback` lists the ones rated down.
+- The card logic is a pure file (`cards.js`) that turns the trace of one answer into card models, so
+  a Node script tests it (`tests/test_cards.py`, skipped when Node is not installed). The numbers on
+  a card are the ones the tools returned; the browser computes none.
+- `http://127.0.0.1:8765/loja` is a fictional store page with the chat as a widget, to show how it
+  would sit on the store website. It follows the same local-only rules.
 - No external request and no extra dependency: a standard-library server and a page of plain HTML,
   CSS and JavaScript, so it also works offline.
 - It listens on `127.0.0.1` only and refuses requests whose host or origin is not local, because it
@@ -159,6 +175,8 @@ flowchart TB
 - `catalog.py` and `pricing.py` (products, promotions, PIX, installments), `policies.py` and
   `retrieval.py` (the manual), `orders.py` and `session.py` (identity check, order status),
   `returns.py` and `handoff.py` (eligibility, tickets), `hours.py` (opening hours).
+- `webhook.py` tells an optional URL about each new ticket; `web/` holds the routes (`app.py`) and
+  the static page, with `cards.js` for the answer cards.
 
 Rules that keep it honest:
 
@@ -186,9 +204,9 @@ Rules that keep it honest:
 | MCP server | Written by hand over stdio, no SDK | A tools-only server needs four methods, matches the no-framework agent loop and adds no dependency. It was checked once against the official Python SDK client, which is not a dependency. |
 | Metrics | Time, lookups and tokens per turn, stored with the conversation; cost only when the prices are configured | The model price is not in the data and changes, so a printed cost that is wrong would be worse than "not configured". |
 | Long conversations | A fixed context budget (about 40 thousand characters): old tool results become a note, then the oldest whole turns are dropped | A model-written summary costs a call and can invent details. The verification state lives in code, so trimming messages cannot weaken the identity check, and the database keeps the full conversation. |
-| Persistence | SQLite (standard library) for messages, sessions, tickets and turn metrics | A customer can resume a conversation and the store team can list tickets, with no server and no extra dependency. Each turn is saved in one transaction so a resumed history is always valid. |
+| Persistence | SQLite (standard library) for messages, sessions, tickets, turn metrics and answer ratings | A customer can resume a conversation and the store team can list tickets, with no server and no extra dependency. Each turn is saved in one transaction so a resumed history is always valid. |
 | Identity | Order number plus the e-mail or phone registered on that order, checked in code | Order numbers are guessable and names are not secret. A wrong contact and an unknown order give the same answer, and three failures lock the session. |
-| Handoff | A simulated ticket in SQLite with protocol `EMP-YYYYMMDD-NNNN` | Item 7.3 of the manual asks for "register and forward, answer in 24 business hours". There is no real queue to call, so the ticket is stored and listed by `emporio handoffs`. |
+| Handoff | A simulated ticket in SQLite with protocol `EMP-YYYYMMDD-NNNN` | Item 7.3 of the manual asks for "register and forward, answer in 24 business hours". There is no real queue to call, so the ticket is stored and listed by `emporio handoffs`. An optional webhook (`HANDOFF_WEBHOOK_URL`) tells the team's own tool about each new ticket, after it is stored. |
 | Delivery | GitHub Actions on Python 3.11 and 3.12 (ruff, format check, pytest) and a Docker image for the terminal chat | The gate runs from a clean checkout on Linux without any secret. The image keeps the database in a volume and the key out of the image. |
 | Dependencies | `openai`, `pandas`, `pypdf`, `python-dotenv` | Nothing else is needed; the new parts added no dependency. |
 
@@ -315,7 +333,9 @@ The challenge says to document the assumptions that fill gaps in the material.
 | A10 | A description that contradicts its product name or specs is dropped; name, specs and price are used instead. |
 | A11 | Categories without products are reported as having nothing registered; the agent does not claim to sell them. |
 | A12 | Identity is checked against the e-mail or phone of the customer who owns the order (an e-mail is shared by customers 11 and 43). |
-| A13 | Human handoff is simulated locally: a ticket in SQLite, listed by `emporio handoffs`. |
+| A13 | Human handoff is simulated locally: a ticket in SQLite, listed by `emporio handoffs`, with an optional webhook. |
+| A14 | The manual promises an answer to a complaint in "24 horas úteis" (item 7.3). It is read as 24 hours while the store is open (Mon-Fri 09-18, Sat 09-13), so a ticket opened on Friday at 10:00 is due on Tuesday at 12:00 (8 hours on Friday, 4 on Saturday, 9 on Monday, 3 on Tuesday). A reading of "the next business day" would be shorter. |
+| A15 | Item 7.1 suggests partner stores for accessories, but the data names none. The agent says the store sells only instruments and does not name or invent other stores. |
 
 ## Limitations and next steps
 
@@ -334,7 +354,10 @@ Known limits:
 - **No shipping calculator.** The manual says freight depends on ZIP, weight and size, and none
   of those are in the data, so the agent only applies the policy.
 - **Business hours ignore holidays** and the store is a single location.
-- **The handoff is simulated.** No one is notified and tickets cannot be closed from the CLI.
+- **The handoff is simulated.** No one is notified unless `HANDOFF_WEBHOOK_URL` is set, and that
+  call was tested against a local test server, not against n8n or Slack. It is synchronous (up to
+  3 s added to the answer that opens the ticket), the summary it sends is written by the model and
+  can contain what the customer typed, and tickets cannot be closed from the CLI.
 - **Identity is a light check.** Whoever knows an order number and its e-mail or phone gets the
   data. The three-attempt lock is per session, so restarting the CLI resets it. The MCP server has
   no authentication besides this check and is meant for local stdio only.
@@ -343,8 +366,9 @@ Known limits:
   by the model while the full text stays in the database.
 - **Prompt-injection defence is best effort.** The real barrier is that no tool exposes other
   customers' data.
-- **The model can still slip in wording.** For example, sample 05 says "violón", which in Spanish
-  is a double bass, for a Brazilian "violão".
+- **The model can still slip in wording.** In another language it can pick a word that means
+  something else there: an earlier version of sample 05 said "violón", a double bass in Spanish, for
+  a Brazilian "violão". The sample was regenerated and the slip is gone, but nothing prevents it.
 - **The evaluation is small and was tuned** (see Evaluation). The adversarial cases are single-turn
   except one with four messages, and a pattern check can miss a leak worded differently.
 - **The cost is only an estimate** and only when the prices are set; the project does not know them.
@@ -353,11 +377,22 @@ Known limits:
   only local requests and is not meant to be exposed to a network. The chat was checked by hand in
   Chrome at desktop width and at 500 px, in both themes; the developer panel as a drawer on a narrow
   screen was checked only by reading its CSS, not on a real phone. It was not tested in Firefox or
-  Safari, its JavaScript has no automated tests, and messages restored after a reload show no time.
+  Safari, only the card logic (`cards.js`) has automated tests, not the rest of its JavaScript, and
+  messages restored after a reload show no time.
 - **The MCP server was checked with one client** (the official Python SDK), not with Claude Desktop
   or an IDE.
 - **The Docker image was built only in the CI**, on GitHub, not on the author's machine, and it
   serves the terminal chat, not the web page.
+- **The clock is read once, at startup.** A web or MCP server left running keeps the date and the
+  open or closed status of the moment it started; restart it (or fix the day with `--today`).
+- **The web server handles one request at a time** (standard-library `HTTPServer`), so reloading the
+  page while an answer is being written waits for it. It also trusts the `Content-Length` header
+  of a local client.
+- **The developer endpoints are not restricted.** `/api/state` returns the two fictional customers
+  of "Dados de teste" and `/api/handoffs` lists the tickets of every conversation, because the
+  developer mode is part of the demo. They are meant for `127.0.0.1` only; do not expose the server.
+- These last three were found in a final review of the code and left as they are, to keep the
+  delivered version stable.
 
 With more time I would: connect the handoff to a real queue, add a holiday calendar and a freight
 API by ZIP code, rate-limit and log identity attempts globally, encrypt the database and set a
@@ -366,7 +401,11 @@ measure whether the policy search changes the answers of the agent.
 
 ## AI coding assistants
 
-I used **Claude** through **Claude Code** to build this project, with a spec-driven workflow:
+I used **Claude** through **Claude Code** to build this project, with a spec-driven workflow. On top
+of Claude Code I used three skill plugins: **isabella** (its `sdd` skill for spec-driven design, and
+`spec-harness` and `spec-orchestrator` to implement specs), **mattpocock-skills** (its `grilling`
+skill for the interview) and **ponytail** (a skill that pushes towards the smallest solution that
+works). The workflow was:
 
 1. **Decisions first.** Before any code I went through a structured interview with Claude about
    the problem: the traps in the data, how to verify a customer, how return deadlines work, how
@@ -374,7 +413,7 @@ I used **Claude** through **Claude Code** to build this project, with a spec-dri
    shaped the specs.
 2. **Specs in the repository.** The outcome is in [`.specs/emporio-agent/`](.specs/emporio-agent/):
    an overview with the contracts read from the real files and the assumptions, an implementation
-   order, 20 specs (each with requirements, contracts, edge cases and the tests to write) and a
+   order, 24 specs (each with requirements, contracts, edge cases and the tests to write) and a
    progress log with the decisions taken while implementing.
 3. **One capability, one commit, test-first.** Each spec was implemented by writing the tests,
    seeing them fail, then writing the code, and committed on its own, so the history reads one
@@ -390,6 +429,14 @@ I used **Claude** through **Claude Code** to build this project, with a spec-dri
    adversarial cases, the MCP server, CI, a context budget and the Docker image. I chose the scope;
    Claude did the work. The same rule held: each spec was written first, its tests failed first,
    and the claims that could not be checked here are marked as such in the limits above.
+6. **A third round (specs 22 to 24).** A chat window with answer cards and a store page with the
+   chat as a widget, thumbs up and down on the answers, and the handoff webhook. Spec 21 was the
+   README of the second round. This round did not change the agent, the tools or the prompt, so the
+   sample conversations and the evaluation still describe it.
+7. **A last review.** Before delivery I asked Claude to review the whole code without running it, on
+   five axes: architecture, correctness and security, performance, quality and reuse, and fit with
+   this challenge. It found no blocking bug. The documentation was brought up to date, and the
+   findings that I chose not to fix at the last minute are listed in the limits above.
 
 Claude also made mistakes along the way, and the tests or the live runs caught them: wrong numbers
 in a spec's acceptance criteria, a price parser that read `439.2` as `439`, two evaluation cases
@@ -413,19 +460,20 @@ Five conversations generated by the real agent with `emporio replay` (index and 
 | [samples/04-return.md](samples/04-return.md) | **Non-trivial:** a regret return with eligibility rules, the manual cited and a ticket |
 | [samples/05-out-of-scope-es.md](samples/05-out-of-scope-es.md) | Out-of-scope request in Spanish, no invented stores |
 
-They were regenerated after the second round, with the agent as it is now.
+They were regenerated after the second round; the third round did not change the agent, the tools
+or the prompt.
 
 ## Repository layout
 
 ```
 data/                    the CSVs and the manual PDF, exactly as delivered
 src/emporio/             the package (see Architecture); web/ is the browser interface, evals/ the evaluations
-tests/                   about 470 tests; tests/fakes.py is the scripted fake model
+tests/                   about 520 tests; tests/fakes.py is the scripted fake model
 samples/                 scripts (customer lines) and the generated transcripts
 docs/                    screenshots of the web interface (chat in both themes, developer mode)
 evals/results/           JSON reports of the live evaluation runs and of the policy search
 .github/workflows/       the CI (ruff, format check, pytest on 3.11 and 3.12, and a Docker build)
 Dockerfile               the image for the terminal chat
-.specs/emporio-agent/    overview, plan, progress log and the 20 specs
+.specs/emporio-agent/    overview, plan, progress log and the 24 specs
 PROJECT_MAP.md           stack and conventions at a glance
 ```

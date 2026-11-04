@@ -1,6 +1,6 @@
 # PROJECT_MAP.md
 
-> Project map, updated on 2026-11-02 after the second round (specs 13 to 20). It describes **this repository** so
+> Project map, updated on 2026-11-03 after the third round (specs 22 to 24). It describes **this repository** so
 > that anyone (human or AI assistant) can find the stack, structure and conventions without reading
 > every file. The README has the user-facing documentation; this file is the contributor's view.
 
@@ -49,7 +49,7 @@
 | Policy retrieval | `pypdf` splits the manual PDF into its numbered sections; one tool returns sections by id and another ranks them (BM25 fused with optional embeddings) | `policies.py`, `retrieval.py` |
 | MCP server | The nine tools over stdio, JSON-RPC written by hand, no SDK | `mcp_server.py` |
 | Metrics and context | Time, lookups and tokens per turn; a character budget for the history sent to the model | `metrics.py`, `context.py` |
-| Storage | `sqlite3` (standard library): sessions, messages, handoff tickets | `db.py` |
+| Storage | `sqlite3` (standard library): sessions, messages, handoff tickets, answer ratings | `db.py` |
 | Web interface | Standard-library HTTP server and a static page (HTML, CSS, JavaScript); no framework, no build step, no external request | `web/` |
 | Config | `python-dotenv` reading `.env` | `config.py` |
 | Argument validation | Each tool's JSON schema is checked before the function runs; no pydantic | `tools.py` |
@@ -69,11 +69,12 @@ src/emporio/
   mcp_server.py          MCP server over stdio
   session.py orders.py   per-conversation state; identity check, order tools
   hours.py returns.py handoff.py   opening hours; return eligibility; handoff tickets
+  webhook.py             optional webhook told about each new handoff ticket (HANDOFF_WEBHOOK_URL)
   db.py                  SQLite repositories
   tools.py prompt.py llm.py agent.py   tool registry, system prompt, model client, loop
   conversation.py        the agent for one session, shared by the CLI and the web page
   cli.py __main__.py     command line
-  web/                   local web interface: app.py (routes), server.py, static/ (the page)
+  web/                   local web interface: app.py (routes), server.py, static/ (the page; cards.js draws the answer cards, loja.html is the demo store page)
   evals/                 evaluation: cases (routing and adversarial), runner, retrieval, command
 tests/                   pytest; fakes.py is the scripted fake model
 samples/                 customer scripts and the generated transcripts
@@ -81,7 +82,7 @@ evals/results/           JSON reports of live eval runs and of the policy search
 .github/workflows/       CI: ruff, format check and pytest on 3.11 and 3.12, plus a Docker build
 Dockerfile               image for the terminal chat
 docs/                    screenshots of the web interface
-.specs/emporio-agent/    overview, plan, progress log and the 20 specs
+.specs/emporio-agent/    overview, plan, progress log and the 24 specs
 ```
 
 **Pattern:** layers that only depend downward. `data.py` and the pure domain modules (`pricing`,
@@ -102,7 +103,7 @@ not read CSVs; `mcp_server.py` only knows the `Toolset`.
 
 ## 6. Tests
 
-- Separate tree, `tests/test_*.py`, about 470 tests; unit tests use the real `data/` and a scripted
+- Separate tree, `tests/test_*.py`, about 520 tests; unit tests use the real `data/` and a scripted
   fake model, never a real LLM.
 - Command: `python -m pytest -q`. The live eval is separate: `python -m emporio.evals`.
 
@@ -110,7 +111,7 @@ not read CSVs; `mcp_server.py` only knows the `Toolset`.
 
 `python -m venv .venv`, activate it, `pip install -e ".[dev]"`, copy `.env.example` to `.env`, set
 `LLM_API_KEY`, run `emporio`. Variables: `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`,
-`EMPORIO_TODAY`, `EMPORIO_DATA_DIR`, `EMPORIO_DB_PATH`, `EMBEDDING_MODEL`, `EMPORIO_EMBEDDINGS`, `LLM_PRICE_IN_PER_M`, `LLM_PRICE_OUT_PER_M`.
+`EMPORIO_TODAY`, `EMPORIO_DATA_DIR`, `EMPORIO_DB_PATH`, `EMBEDDING_MODEL`, `EMPORIO_EMBEDDINGS`, `LLM_PRICE_IN_PER_M`, `LLM_PRICE_OUT_PER_M`, `HANDOFF_WEBHOOK_URL`.
 
 ## 8. CI and deploy
 

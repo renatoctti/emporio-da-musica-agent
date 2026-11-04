@@ -33,11 +33,13 @@ def test_the_counts_are_current_and_no_stale_count_remains():
         "eight tools",
         "eight fixed tools",
         "about 370 tests",
+        "about 470 tests",
         "11 specs",
+        "20 specs",
         "21 scenarios",
     ):
         assert stale not in lowered, stale
-    assert "20 specs" in lowered and "33 scenarios" in lowered
+    assert "24 specs" in lowered and "33 scenarios" in lowered
 
 
 def test_the_retrieval_numbers_come_from_the_report():
