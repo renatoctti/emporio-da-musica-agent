@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date, datetime, time
 from pathlib import Path
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
@@ -35,6 +36,7 @@ class Settings:
     use_embeddings: bool = False  # needs an API key and EMPORIO_EMBEDDINGS not set to off
     price_in_per_m: float | None = None  # USD per million prompt tokens, when known
     price_out_per_m: float | None = None  # USD per million completion tokens, when known
+    handoff_webhook_url: str | None = None  # told about each new handoff ticket (spec 24)
 
 
 def _read(env: Mapping[str, str], key: str) -> str | None:
@@ -54,6 +56,16 @@ def _price(env: Mapping[str, str], key: str) -> float | None:
     if value < 0:
         raise ConfigError(f"{key} must not be negative, got {text!r}")
     return value
+
+
+def _webhook_url(env: Mapping[str, str], key: str) -> str | None:
+    text = _read(env, key)
+    if text is None:
+        return None
+    parts = urlparse(text)
+    if parts.scheme not in ("http", "https") or not parts.netloc:
+        raise ConfigError(f"{key} must be an http or https address, got {text!r}")
+    return text
 
 
 def load_settings(env: Mapping[str, str] | None = None) -> Settings:
@@ -81,6 +93,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         and (_read(env, "EMPORIO_EMBEDDINGS") or "auto").lower() != "off",
         price_in_per_m=_price(env, "LLM_PRICE_IN_PER_M"),
         price_out_per_m=_price(env, "LLM_PRICE_OUT_PER_M"),
+        handoff_webhook_url=_webhook_url(env, "HANDOFF_WEBHOOK_URL"),
         now=now,
         today=now.date(),
         simulated=today_text is not None,

@@ -29,6 +29,7 @@ from emporio.session import SessionState
 from emporio.tools import ToolContext, Toolset
 from emporio.web.app import WebApp
 from emporio.web.server import make_server
+from emporio.webhook import make_notifier
 
 COMMANDS = (
     "chat",
@@ -297,6 +298,7 @@ def _cmd_mcp(settings: Settings, read: Callable[[str], str], write: Callable[[st
         session_id,
         settings.now,
         build_retriever(settings, policies),
+        make_notifier(settings.handoff_webhook_url),
     )
 
     def lines() -> Iterator[str]:

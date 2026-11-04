@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
@@ -37,6 +38,7 @@ def open_handoff(
     order_id: int | None,
     session_id: str | None,
     now: datetime,
+    notify: Callable[[Handoff], None] | None = None,
 ) -> dict[str, Any]:
     if category not in HANDOFF_CATEGORIES:
         return error(
@@ -67,4 +69,6 @@ def open_handoff(
         created_at=now,
         due_at=add_business_hours(now, RESPONSE_BUSINESS_HOURS),
     )
+    if notify is not None:
+        notify(ticket)  # a notifier never raises: the ticket is stored and the answer goes on
     return _payload(ticket, now, duplicate=False)

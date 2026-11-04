@@ -33,6 +33,7 @@
 | 21-readme-round-two | 🟢 Done | README, diagram, 3 screenshots, project map; README numbers tested against the reports; 472 tests |
 | 22-chat-ui-rich-cards | 🟢 Done | Branded header, welcome screen, answer cards from tool results, follow-ups, copy, /loja widget; 19 Node-run card tests |
 | 23-feedback | 🟢 Done | Thumbs up and down per answer, stored per turn, emporio feedback exports candidates |
+| 24-handoff-webhook | 🟢 Done | Optional HANDOFF_WEBHOOK_URL, JSON posted on each new ticket, failures ignored |
 
 > Legend: 🔴 not started · 🟡 in progress · 🟢 done · ❌ blocked
 
@@ -220,6 +221,13 @@
 - Each answer has thumbs up and down buttons (second click removes the rating). Ratings are stored per session and turn in a new feedback table and come back in the state, so a reload keeps the buttons.
 - The command emporio feedback lists the answers rated down; with -o FILE it writes them as JSON candidates (question, reply, comment). The candidates carry no checks: a person writes the check before a case joins the evaluation.
 - Test-first: 13 new tests (store, route validation, state, reset, static structure, command). Not checked in the browser yet; it is checked together with specs 24 and 25.
+
+### 2026-11-03: spec 24, webhook on a new handoff ticket
+
+- New optional setting HANDOFF_WEBHOOK_URL (http or https only). When open_handoff creates a new ticket it POSTs a small JSON message (event, text, protocol, category, summary, order_id, session_id, created_at, due_at). The text field is what a Slack incoming webhook shows; the other fields are for n8n or any receiver.
+- The message never carries the customer name, e-mail, phone or id. The summary is written by the model, so it can contain what the customer said; the spec does not promise otherwise.
+- A duplicate ticket sends nothing. A timeout (3 s), a refused connection, an HTTP error or a bad address is logged and ignored: the ticket is already stored and the answer goes on. The call is synchronous, so a new ticket can add up to 3 s to that answer; there is no retry or queue.
+- The evaluation runner does not know the webhook (a test reads its source). Test-first: 15 new tests, one of them against a real local HTTP server. Not tested against a real n8n or Slack receiver.
 
 ---
 

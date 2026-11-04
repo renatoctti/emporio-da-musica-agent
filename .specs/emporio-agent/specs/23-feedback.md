@@ -1,6 +1,6 @@
 # Spec 23: customer feedback on the answers
 
-**Status:** ✅ In progress
+**Status:** 🟢 Implemented
 **Author:** renatoctti
 **Date:** 2026-11-03
 **Scope:** let the customer rate each answer with thumbs up or down, store it, and turn the bad ones into candidates for the evaluation

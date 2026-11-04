@@ -16,7 +16,7 @@ from typing import Any
 
 from emporio import catalog, handoff, orders, policies, retrieval, returns
 from emporio.data import StoreData
-from emporio.db import HANDOFF_CATEGORIES, HandoffStore
+from emporio.db import HANDOFF_CATEGORIES, Handoff, HandoffStore
 from emporio.policies import PolicySection
 from emporio.results import error
 from emporio.retrieval import PolicyRetriever
@@ -52,6 +52,7 @@ class ToolContext:
     session_id: str | None
     now: datetime
     retriever: PolicyRetriever | None = None
+    notify: Callable[[Handoff], None] | None = None  # told about each new handoff ticket
 
     def __post_init__(self) -> None:
         if self.retriever is None:
@@ -224,6 +225,7 @@ def _build_tools(ctx: ToolContext) -> dict[str, _Tool]:
                 "store": c.handoffs,
                 "session_id": c.session_id,
                 "now": c.now,
+                "notify": c.notify,
             },
             defaults={"order_id": None},
         ),
