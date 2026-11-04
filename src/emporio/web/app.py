@@ -33,6 +33,7 @@ STATIC_DIR = Path(__file__).parent / "static"
 POLICY_FILE = "políticas_da_loja.pdf"
 MAX_BODY_BYTES = 16 * 1024
 MAX_TEXT_CHARS = 2000
+MAX_COMMENT_CHARS = 500
 MAX_RESULT_CHARS = 4000
 HIDDEN = "(oculto)"
 
@@ -375,7 +376,7 @@ class WebApp:
             return _error(403, "Esta página só responde no próprio computador.")
         route = unquote(path.split("?", 1)[0])
         get_routes = {"/", "/loja", "/api/state", "/api/handoffs"}
-        post_routes = {"/api/chat", "/api/reset"}
+        post_routes = {"/api/chat", "/api/reset", "/api/feedback"}
         if method == "GET":
             if route in get_routes:
                 return self._get(route)
@@ -428,7 +429,27 @@ class WebApp:
         if route == "/api/reset":
             self._start_session()
             return _json(200, {"session_id": self.session_id, "verified": None})
+        if route == "/api/feedback":
+            return self._feedback(payload)
         return self._chat(payload)
+
+    def _feedback(self, payload: dict[str, Any]) -> Response:
+        index = payload.get("turn_index")
+        rating = payload.get("rating", "missing")
+        comment = payload.get("comment")
+        asked = sum(1 for m in self._history if m["role"] == "user")
+        if type(index) is not int or not 0 <= index < asked:
+            return _error(400, "Resposta não encontrada.")
+        if rating not in ("up", "down", None):
+            return _error(400, "Use up, down ou null.")
+        if comment is not None and (
+            not isinstance(comment, str) or len(comment) > MAX_COMMENT_CHARS
+        ):
+            return _error(400, f"Use até {MAX_COMMENT_CHARS} caracteres no comentário.")
+        self.sessions.save_feedback(
+            self.session_id, index, rating, (comment or "").strip() or None, datetime.now()
+        )
+        return _json(200, {"ok": True})
 
     def _prices(self) -> Prices:
         return Prices(self.settings.price_in_per_m, self.settings.price_out_per_m)
@@ -476,6 +497,7 @@ class WebApp:
         turns: list[dict[str, Any]] = []
         calls: dict[str, dict[str, str]] = {}
         stored = self.sessions.load_turn_metrics(self._session_id) if self._session_id else {}
+        rated = self.sessions.load_feedback(self._session_id) if self._session_id else {}
         for message in self._history:
             if message["role"] == "user":
                 found = stored.get(len(turns))
@@ -485,6 +507,7 @@ class WebApp:
                         "reply": "",
                         "trace": [],
                         "metrics": as_dict(found, self._prices()) if found else None,
+                        "feedback": rated[len(turns)][0] if len(turns) in rated else None,
                     }
                 )
                 calls = {}

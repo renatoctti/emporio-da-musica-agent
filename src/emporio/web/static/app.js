@@ -155,6 +155,24 @@
     return button;
   }
 
+  function rateButton(turn, index, rating, label, symbol) {
+    var button = h("button", { type: "button", class: "act-btn rate-btn", title: label, "aria-label": label, "aria-pressed": String(turn.feedback === rating),
+      onclick: function () { rate(turn, index, rating); } }, icon(symbol));
+    button.dataset.rating = rating;
+    return button;
+  }
+
+  // A second click on the pressed button removes the rating.
+  function rate(turn, index, rating) {
+    var next = turn.feedback === rating ? null : rating;
+    api("/api/feedback", { turn_index: index, rating: next }).then(function () {
+      turn.feedback = next;
+      document.querySelectorAll("#turn-" + index + " .rate-btn").forEach(function (button) {
+        button.setAttribute("aria-pressed", String(button.dataset.rating === next));
+      });
+    }).catch(function () { /* the buttons keep their state; a lost rating is not worth an error message */ });
+  }
+
   function line(cls, text) { return text ? h("p", { class: cls, text: text }) : null; }
 
   function priceRow(oldPrice, price, discount) {
@@ -242,6 +260,8 @@
     var meta = h("div", { class: "meta" },
       turn.at ? h("span", { text: clock(turn.at) }) : null,
       copyButton("Copiar resposta", turn.reply),
+      rateButton(turn, index, "up", "Resposta boa", "i-up"),
+      rateButton(turn, index, "down", "Resposta ruim", "i-down"),
       turn.metrics ? h("span", { class: "dev-line dev-only", text: metricsText(turn.metrics) }) : null);
     var tags = h("div", { class: "tags dev-only" });
     kindsOf(turn.trace).forEach(function (kind) {

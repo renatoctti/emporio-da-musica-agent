@@ -32,6 +32,7 @@
 | 20-docker | 🟢 Done | Dockerfile for the terminal chat; built and smoke-tested in CI (3 jobs green); 465 tests |
 | 21-readme-round-two | 🟢 Done | README, diagram, 3 screenshots, project map; README numbers tested against the reports; 472 tests |
 | 22-chat-ui-rich-cards | 🟢 Done | Branded header, welcome screen, answer cards from tool results, follow-ups, copy, /loja widget; 19 Node-run card tests |
+| 23-feedback | 🟢 Done | Thumbs up and down per answer, stored per turn, emporio feedback exports candidates |
 
 > Legend: 🔴 not started · 🟡 in progress · 🟢 done · ❌ blocked
 
@@ -213,6 +214,12 @@
 - The card logic is a pure file (cards.js) tested from pytest through Node with the real tool results (19 tests; skipped when Node is missing, CI has it). The browser formats the numbers it receives and computes none.
 - /loja is a fictional store page with the chat as a widget in an iframe of the same origin; for that the CSP of the pages changed from frame-ancestors none to self.
 - Checked in Chrome in both themes: welcome screen, product answer, order answer with a late estimate, developer mode, the widget on /loja, no console errors. Not checked on a real phone. The three screenshots in docs/ were retaken with the new interface.
+
+### 2026-11-03: spec 23, feedback on the answers
+
+- Each answer has thumbs up and down buttons (second click removes the rating). Ratings are stored per session and turn in a new feedback table and come back in the state, so a reload keeps the buttons.
+- The command emporio feedback lists the answers rated down; with -o FILE it writes them as JSON candidates (question, reply, comment). The candidates carry no checks: a person writes the check before a case joins the evaluation.
+- Test-first: 13 new tests (store, route validation, state, reset, static structure, command). Not checked in the browser yet; it is checked together with specs 24 and 25.
 
 ---
 

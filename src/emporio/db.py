@@ -57,6 +57,15 @@ CREATE TABLE IF NOT EXISTS turn_metrics (
     completion_tokens INTEGER NOT NULL,
     UNIQUE (session_id, turn_index)
 );
+CREATE TABLE IF NOT EXISTS feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT NOT NULL REFERENCES sessions(id),
+    turn_index INTEGER NOT NULL,
+    rating TEXT NOT NULL CHECK (rating IN ('up', 'down')),
+    comment TEXT,
+    created_at TEXT NOT NULL,
+    UNIQUE (session_id, turn_index)
+);
 """
 
 
@@ -225,6 +234,46 @@ class SessionStore:
                 "SELECT * FROM turn_metrics WHERE session_id = ? ORDER BY id", (session_id,)
             )
         return [_turn_metrics(row) for row in rows]
+
+    def save_feedback(
+        self,
+        session_id: str,
+        turn_index: int,
+        rating: str | None,
+        comment: str | None,
+        now: datetime,
+    ) -> None:
+        """One rating per turn: a new one replaces the old, None removes it."""
+        self._require(session_id)
+        with self._conn:
+            if rating is None:
+                self._conn.execute(
+                    "DELETE FROM feedback WHERE session_id = ? AND turn_index = ?",
+                    (session_id, turn_index),
+                )
+                return
+            self._conn.execute(
+                "INSERT INTO feedback (session_id, turn_index, rating, comment, created_at)"
+                " VALUES (?, ?, ?, ?, ?)"
+                " ON CONFLICT (session_id, turn_index) DO UPDATE SET"
+                " rating = excluded.rating, comment = excluded.comment,"
+                " created_at = excluded.created_at",
+                (session_id, turn_index, rating, comment, _stamp(now)),
+            )
+
+    def load_feedback(self, session_id: str) -> dict[int, tuple[str, str | None]]:
+        self._require(session_id)
+        rows = self._conn.execute(
+            "SELECT turn_index, rating, comment FROM feedback WHERE session_id = ?", (session_id,)
+        )
+        return {row["turn_index"]: (row["rating"], row["comment"]) for row in rows}
+
+    def down_feedback(self) -> list[tuple[str, int, str | None]]:
+        """Every answer rated down, as (session id, turn index, comment), oldest first."""
+        rows = self._conn.execute(
+            "SELECT session_id, turn_index, comment FROM feedback WHERE rating = 'down' ORDER BY id"
+        )
+        return [(row["session_id"], row["turn_index"], row["comment"]) for row in rows]
 
     def get_session(self, session_id: str) -> SessionInfo:
         row = self._conn.execute(_SESSION_QUERY + " WHERE s.id = ?", (session_id,)).fetchone()

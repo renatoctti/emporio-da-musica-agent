@@ -323,6 +323,8 @@ button.tag:hover { background: var(--subtle); color: var(--ink); }
 .act-btn { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border: 0; border-radius: 8px; background: none; color: var(--muted); font-size: 12px; }
 .act-btn:hover { background: var(--subtle); color: var(--ink); }
 .act-btn .icon { width: 15px; height: 15px; }
+.rate-btn { padding: 3px 6px; }
+.rate-btn[aria-pressed="true"] { background: var(--accent-soft); color: var(--link); }
 .ai-note { margin-top: 8px; text-align: center; font-size: 11.5px; color: var(--muted); }
 
 /* ---- the chat inside the store page widget (/?embed=1) ---- */

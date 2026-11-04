@@ -40,6 +40,7 @@ COMMANDS = (
     "web",
     "stats",
     "mcp",
+    "feedback",
 )
 EXIT_WORDS = frozenset({"sair", "exit", "quit"})
 POLICY_FILE = "políticas_da_loja.pdf"
@@ -70,6 +71,8 @@ def build_parser() -> argparse.ArgumentParser:
     stats = commands.add_parser("stats", help="latency, tokens and cost of the answers")
     stats.add_argument("--session", metavar="SESSION_ID", help="only this conversation")
     commands.add_parser("mcp", help="serve the agent tools to an MCP client over stdio")
+    feedback = commands.add_parser("feedback", help="list the answers rated thumbs down")
+    feedback.add_argument("-o", "--output", metavar="FILE", help="write them as JSON candidates")
     commands.add_parser("data-report", help="list the data issues found in the CSV files")
 
     export = commands.add_parser("export", help="print a conversation as Markdown")
@@ -321,6 +324,54 @@ def _cmd_stats(args: argparse.Namespace, settings: Settings, write: Callable[[st
     return 0
 
 
+def _turn_texts(messages: Sequence[dict[str, Any]]) -> list[tuple[str, str]]:
+    """The customer message and the final answer of each turn of a stored conversation."""
+    turns: list[list[str]] = []
+    for message in messages:
+        if message["role"] == "user":
+            turns.append([message["content"], ""])
+        elif (
+            message["role"] == "assistant"
+            and message.get("content")
+            and not message.get("tool_calls")
+        ):
+            turns[-1][1] = message["content"]
+    return [(question, reply) for question, reply in turns]
+
+
+def _cmd_feedback(
+    args: argparse.Namespace, settings: Settings, write: Callable[[str], None]
+) -> int:
+    store = SessionStore(connect(settings.db_path))
+    rows = store.down_feedback()
+    if not rows:
+        write("No answers rated down yet.")
+        return 0
+    candidates = []
+    for session_id, turn_index, comment in rows:
+        turns = _turn_texts(store.load_messages(session_id))
+        if turn_index < len(turns):
+            question, reply = turns[turn_index]
+            candidates.append(
+                {
+                    "session_id": session_id,
+                    "turn_index": turn_index,
+                    "question": question,
+                    "reply": reply,
+                    "comment": comment,
+                }
+            )
+    if args.output:
+        text = json.dumps(candidates, ensure_ascii=False, indent=2) + "\n"
+        Path(args.output).write_text(text, encoding="utf-8")
+        write(f"{len(candidates)} candidates written to {args.output}")
+        return 0
+    for item in candidates:
+        note = f" | {item['comment']}" if item["comment"] else ""
+        write(f"{item['session_id']} #{item['turn_index']}: {item['question']}{note}")
+    return 0
+
+
 def _cmd_export(args: argparse.Namespace, settings: Settings, write: Callable[[str], None]) -> int:
     markdown = export_markdown(SessionStore(connect(settings.db_path)), args.session_id)
     return _write_transcript(markdown, args.output, write)
@@ -396,6 +447,8 @@ def main(
             return _cmd_mcp(settings, read, write)
         if args.command == "stats":
             return _cmd_stats(args, settings, write)
+        if args.command == "feedback":
+            return _cmd_feedback(args, settings, write)
         if args.command == "export":
             return _cmd_export(args, settings, write)
         return _cmd_data_report(settings, write)

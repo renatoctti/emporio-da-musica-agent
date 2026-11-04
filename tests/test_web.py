@@ -184,6 +184,7 @@ def test_a_tool_turn_returns_the_trace_and_the_state_rebuilds_it_after_a_reload(
             "reply": result["reply"],
             "trace": result["trace"],
             "metrics": result["metrics"],
+            "feedback": None,
         }
     ]
     # one tool round plus the final answer: two model calls, one tool call, no price configured
