@@ -269,6 +269,15 @@ artifact. It does not run on every pull request: it needs the secret, which fork
 the model is not deterministic, so one failed scenario is a reason to rerun and read the reply,
 not a verdict. A run costs about US$ 0.03.
 
+**Tone judge (calibration in progress).** The checks above cannot tell whether a reply sounds like
+the store: informal, short, in the customer's language. `emporio.evals.judge` asks a model to
+grade a reply PASS or FAIL against four rules taken from the persona section of the prompt. A judge
+is only trusted once it agrees with a person, so `evals/judge/labels.csv` holds 42 replies for the
+author to label `pass` or `fail`: 34 real replies from the evaluation runs and 8 written by hand
+to break the rules (the `source` column says which). `python -m emporio.evals.judge` runs the
+judge on the labeled rows and prints the accuracy, Cohen's kappa and every disagreement. The judge
+stays out of the release gate until its kappa is reported here.
+
 | Model | Scenarios | Result | Tokens (in / out) | Approx. cost |
 |---|---|---|---|---|
 | `anthropic/claude-haiku-5.5` | 21 routing | **21/21** | 160k / 7k | US$ 0.02 |

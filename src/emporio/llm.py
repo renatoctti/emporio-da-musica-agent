@@ -36,8 +36,9 @@ class OpenAIChatClient:
         self.usage = {"prompt_tokens": 0, "completion_tokens": 0}
 
     def chat(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]) -> dict[str, Any]:
+        extra = {"tools": tools} if tools else {}  # some providers reject an empty list
         response = self._client.chat.completions.create(
-            model=self._model, messages=messages, tools=tools, temperature=TEMPERATURE
+            model=self._model, messages=messages, temperature=TEMPERATURE, **extra
         )
         if response.usage is not None:
             self.usage["prompt_tokens"] += response.usage.prompt_tokens
