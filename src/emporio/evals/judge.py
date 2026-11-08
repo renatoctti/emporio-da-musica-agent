@@ -113,7 +113,9 @@ def load_labels(path: Path) -> list[LabeledReply]:
             if not label:
                 continue
             if label not in ("pass", "fail"):
-                raise ValueError(f"row {row['id']}: human_label must be pass or fail, got {label!r}")
+                raise ValueError(
+                    f"row {row['id']}: human_label must be pass or fail, got {label!r}"
+                )
             rows.append(
                 LabeledReply(row["id"], row["customer_message"], row["reply"], label == "pass")
             )
