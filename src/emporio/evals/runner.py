@@ -141,3 +141,21 @@ def run_case(case: EvalCase, client: ChatClient, settings: Settings) -> CaseResu
 
 def with_model(settings: Settings, model: str | None) -> Settings:
     return replace(settings, llm_model=model) if model else settings
+
+
+def gate(report: dict, baseline: dict | None, fail_under: float | None) -> list[str]:
+    """Why a run should block a release: a pass rate under the floor, or a case that passed in
+    the baseline report and fails now. Empty when neither check is on or both hold."""
+    problems: list[str] = []
+    total = report["total"]
+    rate = report["passed"] / total if total else 0.0
+    if fail_under is not None and rate < fail_under:
+        problems.append(f"pass rate {rate:.0%} is under the floor of {fail_under:.0%}")
+    if baseline is not None:
+        passed_before = {c["id"] for c in baseline["cases"] if c["passed"]}
+        problems += [
+            f"regression: {c['id']} passed in the baseline and fails now"
+            for c in report["cases"]
+            if c["id"] in passed_before and not c["passed"]
+        ]
+    return problems

@@ -99,7 +99,7 @@ Set in `.env` (see `.env.example`) or in the environment. Blank values count as 
 | `emporio export ID [-o FILE]` | Render a conversation as Markdown, with the tool calls. |
 | `emporio replay SCRIPT [--today D] [-o FILE]` | Run a text file of customer messages through the agent and write the transcript. This is how the samples were made. |
 | `emporio data-report` | List the problems found in the CSV files and how many. |
-| `python -m emporio.evals [--model M] [--case ID] [--tag T] [--report FILE]` | Run the evaluation against a real model; `--tag adversarial` runs only the attacks. |
+| `python -m emporio.evals [--model M] [--case ID] [--tag T] [--report FILE] [--baseline FILE] [--fail-under RATE]` | Run the evaluation against a real model; `--tag adversarial` runs only the attacks. With `--baseline` or `--fail-under` the exit code is 1 when a case that passed in the baseline fails now or the pass rate is under the floor. |
 | `python -m emporio.evals.retrieval [--report FILE]` | Evaluate the manual search offline (BM25 needs no key; with a key it also scores embeddings and the hybrid). |
 
 ### Web interface
@@ -259,6 +259,15 @@ that must or must not match), and **price grounding**: every `R$` amount in a re
 tool result or in the customer's own message. The scenarios cover catalog and prices, installment
 and PIX rules, expired promotions, returns, order status and identity, out-of-scope requests,
 prompt injection, a complaint that needs a ticket, and an English question.
+
+**Release gate.** The unit tests and the lint run in CI without a key (`ci.yml`). The evaluation
+needs a real model, so it is a separate workflow (`evals.yml`), started by hand or every Monday
+with the repository secret `LLM_API_KEY`. It runs the 33 scenarios with `--fail-under 0.95` and
+`--baseline evals/results/claude-haiku-5.5-33-cases.json`: the run fails when fewer than 95% pass,
+or when a scenario that passed in the baseline fails now, and the report is uploaded as an
+artifact. It does not run on every pull request: it needs the secret, which forks do not get, and
+the model is not deterministic, so one failed scenario is a reason to rerun and read the reply,
+not a verdict. A run costs about US$ 0.03.
 
 | Model | Scenarios | Result | Tokens (in / out) | Approx. cost |
 |---|---|---|---|---|

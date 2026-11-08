@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 from emporio.config import load_settings
 from emporio.evals.cases import CASES
-from emporio.evals.runner import run_case, with_model
+from emporio.evals.runner import gate, run_case, with_model
 from emporio.llm import MissingApiKeyError, OpenAIChatClient
 
 
@@ -25,6 +25,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--tag", help="run only the cases with this tag")
     parser.add_argument("--report", metavar="FILE", help="write the full JSON report here")
+    parser.add_argument(
+        "--baseline",
+        metavar="FILE",
+        help="a previous JSON report; a case that passed there and fails now blocks the run",
+    )
+    parser.add_argument(
+        "--fail-under",
+        type=float,
+        metavar="RATE",
+        help="block the run when the pass rate (0 to 1) is under this floor",
+    )
     args = parser.parse_args(argv)
 
     load_dotenv()
@@ -56,34 +67,41 @@ def main(argv: Sequence[str] | None = None) -> int:
     mean_latency = sum(r.latency_ms for r in results) / len(results) if results else 0
     print(f"mean latency per case: {mean_latency:.0f} ms")
 
+    report = {
+        "model": settings.llm_model,
+        "date": date.today().isoformat(),
+        "passed": passed,
+        "total": len(results),
+        "tool_calls": calls,
+        "usage": client.usage,
+        "mean_latency_ms": round(mean_latency),
+        "cases": [
+            {
+                "id": r.case_id,
+                "passed": r.passed,
+                "failures": r.failures,
+                "tools": r.tool_names,
+                "replies": r.replies,
+                "latency_ms": r.latency_ms,
+                "prompt_tokens": r.prompt_tokens,
+                "completion_tokens": r.completion_tokens,
+            }
+            for r in results
+        ],
+    }
     if args.report:
-        report = {
-            "model": settings.llm_model,
-            "date": date.today().isoformat(),
-            "passed": passed,
-            "total": len(results),
-            "tool_calls": calls,
-            "usage": client.usage,
-            "mean_latency_ms": round(mean_latency),
-            "cases": [
-                {
-                    "id": r.case_id,
-                    "passed": r.passed,
-                    "failures": r.failures,
-                    "tools": r.tool_names,
-                    "replies": r.replies,
-                    "latency_ms": r.latency_ms,
-                    "prompt_tokens": r.prompt_tokens,
-                    "completion_tokens": r.completion_tokens,
-                }
-                for r in results
-            ],
-        }
         Path(args.report).write_text(
             json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
         )
         print(f"report written to {args.report}")
-    return 0
+
+    baseline = None
+    if args.baseline:
+        baseline = json.loads(Path(args.baseline).read_text(encoding="utf-8"))
+    problems = gate(report, baseline, args.fail_under)
+    for problem in problems:
+        print(f"GATE: {problem}", file=sys.stderr)
+    return 1 if problems else 0
 
 
 if __name__ == "__main__":
