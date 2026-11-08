@@ -43,3 +43,15 @@ def test_it_is_read_only_uses_no_secret_and_only_official_actions():
 def test_the_readme_shows_the_workflow_status():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "actions/workflows/ci.yml" in readme
+
+
+EVALS = ROOT / ".github" / "workflows" / "evals.yml"
+
+
+def test_the_eval_workflow_runs_by_hand_or_weekly_and_never_on_a_pull_request():
+    text = EVALS.read_text(encoding="utf-8")
+    assert "workflow_dispatch:" in text and "schedule:" in text
+    assert "pull_request" not in text and "push:" not in text
+    assert "contents: read" in text
+    assert "--fail-under" in text and "--baseline" in text
+    assert text.count("secrets.") == 1  # the key reaches only the step that calls the model

@@ -7,7 +7,7 @@ from emporio.agent import AgentTurn, ToolCallRecord
 from emporio.config import load_settings
 from emporio.data import load_store_data
 from emporio.evals.cases import CASES, EvalCase
-from emporio.evals.runner import evaluate_case, grounded_prices, parse_amounts, run_case
+from emporio.evals.runner import evaluate_case, gate, grounded_prices, parse_amounts, run_case
 from emporio.tools import TOOL_NAMES
 from tests.fakes import FakeChatClient, assistant_calls, assistant_text, tool_call
 
@@ -190,3 +190,39 @@ def test_run_case_keeps_a_multi_turn_conversation_and_stays_in_memory(tmp_path):
     assert len(result.replies) == 2
     assert [m["role"] for m in client.calls[1][0]] == ["system", "user", "assistant", "user"]
     assert not settings.db_path.exists()
+
+
+# --- the release gate ---------------------------------------------------------------------------
+
+
+def _report(*outcomes):
+    return {
+        "passed": sum(ok for _, ok in outcomes),
+        "total": len(outcomes),
+        "cases": [{"id": case_id, "passed": ok} for case_id, ok in outcomes],
+    }
+
+
+def test_the_gate_is_silent_when_no_check_is_on():
+    assert gate(_report(("E01", False)), None, None) == []
+
+
+def test_the_gate_blocks_a_pass_rate_under_the_floor():
+    problems = gate(_report(("E01", True), ("E02", False)), None, 0.9)
+    assert problems == ["pass rate 50% is under the floor of 90%"]
+    assert gate(_report(("E01", True), ("E02", True)), None, 0.9) == []
+
+
+def test_the_gate_blocks_a_case_that_passed_in_the_baseline_and_fails_now():
+    baseline = _report(("E01", True), ("E02", False))
+    problems = gate(_report(("E01", False), ("E02", False)), baseline, None)
+    assert problems == ["regression: E01 passed in the baseline and fails now"]
+
+
+def test_a_case_that_already_failed_in_the_baseline_is_not_a_regression():
+    baseline = _report(("E01", True), ("E02", False))
+    assert gate(_report(("E01", True), ("E02", False)), baseline, None) == []
+
+
+def test_the_gate_reports_a_run_with_no_cases_when_a_floor_is_set():
+    assert gate(_report(), None, 0.5) == ["pass rate 0% is under the floor of 50%"]
