@@ -68,7 +68,7 @@ def parse_verdict(text: str | None) -> Verdict | None:
     match = _VERDICT.search(text or "")
     if match is None:
         return None
-    reason = (text or "")[match.end() :].strip(" \n.:-")
+    reason = (text or "")[match.end() :].lstrip(" \n.:-").strip()
     return Verdict(match.group(1).upper() == "PASS", reason)
 
 
