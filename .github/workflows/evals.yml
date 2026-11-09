@@ -5,6 +5,12 @@ name: Evals
 # Actions tab, or let the weekly run catch drift in the model behind the same name.
 on:
   workflow_dispatch:
+    inputs:
+      engine:
+        description: "Agent loop to evaluate"
+        type: choice
+        options: [loop, langgraph]
+        default: loop
   schedule:
     - cron: "17 6 * * 1"
 
@@ -22,12 +28,13 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
       - name: Install
-        run: python -m pip install -e .
+        run: python -m pip install -e ".[graph]"
       - name: Run the evaluation and compare with the baseline
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
         run: >
           python -m emporio.evals
+          --engine ${{ inputs.engine || 'loop' }}
           --baseline evals/results/claude-haiku-5.5-33-cases.json
           --fail-under 0.95
           --report evals-report.json
