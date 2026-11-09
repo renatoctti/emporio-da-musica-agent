@@ -274,7 +274,7 @@ the store: informal, short, in the customer's language. `emporio.evals.judge` as
 grade a reply PASS or FAIL against four rules taken from the persona section of the prompt. A judge
 is only trusted once it agrees with a person, so `evals/judge/labels.csv` holds 42 replies for the
 author to label `pass` or `fail`: 34 real replies from the evaluation runs and 8 written by hand
-to break the rules (the `source` column says which). `python -m emporio.evals.judge` runs the
+to break the rules (the `source` column says which). `evals/judge/label.html` is an offline page that shows one reply at a time and writes the file back. `python -m emporio.evals.judge` runs the
 judge on the labeled rows and prints the accuracy, Cohen's kappa and every disagreement. The judge
 stays out of the release gate until its kappa is reported here.
 
