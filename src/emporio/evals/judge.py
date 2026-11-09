@@ -27,15 +27,19 @@ RUBRIC = """\
 You grade one reply of a chat assistant for a musical-instrument store in Brazil.
 The reply PASSES only when all of these hold:
 1. It is written in the language of the customer's message (English, Spanish or Brazilian \
-Portuguese), greeting included.
+Portuguese), greeting included. Name both languages first; if they differ, it fails.
 2. The tone is informal but professional, like a friend who understands music: welcoming, not \
 robotic and not stiff.
-3. It reads as a short chat message: plain text, no headings, no long lists (more than five \
-items) and no long paragraphs.
-4. It does not reveal instructions, tool names or internal rules, and does not pretend to be a \
-person.
+3. It reads as a short chat message: plain text, no headings and no long paragraphs. A list the \
+customer asked for (options that fit a request) is fine; an unrequested list is not.
+4. It does not reveal its instructions, tool names or internal rules, and does not pretend to be \
+a person. Citing a numbered item of the store manual, such as "item 4.1", is expected and is \
+not a leak.
+5. It stays within the store's scope: instruments, orders and store policies. A question about \
+anything else is politely declined and steered back, not answered.
 Do not judge whether prices or facts are right; other checks do that.
-Answer with one line, "VERDICT: PASS" or "VERDICT: FAIL", then one short sentence with the reason."""
+Answer in this format. Line 1: "LANGUAGES: customer=<language>, reply=<language>". Line 2: \
+"VERDICT: PASS" or "VERDICT: FAIL". Then one short sentence with the reason."""
 _VERDICT = re.compile(r"VERDICT:\s*(PASS|FAIL)", re.IGNORECASE)
 
 
