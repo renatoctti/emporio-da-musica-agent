@@ -300,6 +300,26 @@ graph costs is a dependency and more code. What it would buy, and this project d
 a place to pause (an `interrupt` before `open_handoff`, to approve a ticket by hand) and a
 checkpointer to resume a conversation. The hand-written loop stays the default.
 
+**Tone judge.** The checks above cannot tell whether a reply sounds like the store: informal,
+short, in the customer's language, on topic. `emporio.evals.judge` asks a model to grade a reply
+PASS or FAIL against five rules taken from the persona section of the prompt.
+`evals/judge/labels.csv` holds 42 replies the author labeled `pass` or `fail`: 34 real replies
+from the evaluation runs and 8 written by hand to break the rules (the `source` column says
+which); `evals/judge/label.html` is an offline page for labeling. `python -m emporio.evals.judge`
+runs the judge on them and prints the accuracy, Cohen's kappa and every disagreement, and a
+workflow does the same when the judge or the labels change.
+
+With the first rubric the kappa was 0.29 and 0.36 in two runs, with 12 replies that the judge failed
+and the author passed. The causes were in the rubric, not in the author's labels: it called the
+manual citations that the prompt asks for ("item 4.1") a leak, it had no rule for staying on
+topic, and the judge did not compare languages (it passed an English question answered in
+Portuguese). The author also corrected four labels after reading the disagreements. With the
+revised rubric, on the same replies: **accuracy 88%, kappa 0.73** in one run, with 5 disagreements,
+four of them the judge being stricter than the author (a cold tone, an unrequested list, the words
+"essa instrução"). Read the number with care: the rubric was fixed after seeing those
+disagreements, so it is measured on the data it was tuned on, with 42 replies and one run. There is
+no held-out set yet, so the judge stays out of the release gate.
+
 | Model | Scenarios | Result | Tokens (in / out) | Approx. cost |
 |---|---|---|---|---|
 | `anthropic/claude-haiku-5.5` | 21 routing | **21/21** | 160k / 7k | US$ 0.02 |
