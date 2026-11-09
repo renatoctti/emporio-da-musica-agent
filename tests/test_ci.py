@@ -55,3 +55,14 @@ def test_the_eval_workflow_runs_by_hand_or_weekly_and_never_on_a_pull_request():
     assert "contents: read" in text
     assert "--fail-under" in text and "--baseline" in text
     assert text.count("secrets.") == 1  # the key reaches only the step that calls the model
+
+
+JUDGE = ROOT / ".github" / "workflows" / "judge.yml"
+
+
+def test_the_judge_workflow_never_runs_for_a_fork_and_uses_the_key_once():
+    text = JUDGE.read_text(encoding="utf-8")
+    assert "workflow_dispatch:" in text and "pull_request:" in text
+    assert "head.repo.full_name == github.repository" in text
+    assert "contents: read" in text
+    assert text.count("secrets.") == 1

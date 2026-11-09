@@ -1,0 +1,32 @@
+name: Judge calibration
+
+# Runs the tone judge on the replies a person labeled and prints how often they agree. It calls a
+# paid model (about 42 short requests), so it runs only when the judge or its labels change in a
+# pull request from this repository (forks get no secrets), or by hand from the Actions tab.
+on:
+  pull_request:
+    paths:
+      - "evals/judge/**"
+      - "src/emporio/evals/judge.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  judge:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install
+        run: python -m pip install -e .
+      - name: Compare the judge with the labels
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: python -m emporio.evals.judge
