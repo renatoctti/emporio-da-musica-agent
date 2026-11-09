@@ -101,9 +101,7 @@ class GraphAgent:
         graph.add_node("call_model", call_model)
         graph.add_node("run_tools", run_tools)
         graph.add_edge(START, "call_model")
-        graph.add_conditional_edges(
-            "call_model", after_model, {"run_tools": "run_tools", END: END}
-        )
+        graph.add_conditional_edges("call_model", after_model, {"run_tools": "run_tools", END: END})
         graph.add_conditional_edges(
             "run_tools", after_tools, {"call_model": "call_model", END: END}
         )
@@ -131,7 +129,8 @@ class GraphAgent:
             latency_ms=round((self._clock() - started) * 1000),
             model_calls=state["model_calls"],
             tool_calls=len(state["records"]),
-            prompt_tokens=usage_after.get("prompt_tokens", 0) - usage_before.get("prompt_tokens", 0),
+            prompt_tokens=usage_after.get("prompt_tokens", 0)
+            - usage_before.get("prompt_tokens", 0),
             completion_tokens=usage_after.get("completion_tokens", 0)
             - usage_before.get("completion_tokens", 0),
         )
