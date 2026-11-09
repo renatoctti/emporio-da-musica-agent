@@ -461,11 +461,7 @@ measure whether the policy search changes the answers of the agent.
 
 ## AI coding assistants
 
-I used **Claude** through **Claude Code** to build this project, with a spec-driven workflow. On top
-of Claude Code I used three skill plugins: **isabella** (its `sdd` skill for spec-driven design, and
-`spec-harness` and `spec-orchestrator` to implement specs), **mattpocock-skills** (its `grilling`
-skill for the interview) and **ponytail** (a skill that pushes towards the smallest solution that
-works). The workflow was:
+I used **Claude** through **Claude Code** to build this project, with a spec-driven workflow:
 
 1. **Decisions first.** Before any code I went through a structured interview with Claude about
    the problem: the traps in the data, how to verify a customer, how return deadlines work, how
