@@ -1,3 +1,5 @@
+import csv
+
 import pytest
 
 from emporio.evals.judge import (
@@ -84,5 +86,6 @@ def test_load_labels_skips_unlabeled_rows_and_rejects_a_bad_label(tmp_path):
 
 
 def test_the_shipped_labels_file_has_the_columns_the_loader_reads():
-    header = DEFAULT_LABELS.read_text(encoding="utf-8-sig").splitlines()[0]
-    assert header.split(",")[:4] == ["id", "customer_message", "reply", "human_label"]
+    with DEFAULT_LABELS.open(encoding="utf-8-sig", newline="") as handle:
+        header = next(csv.reader(handle))
+    assert header[:4] == ["id", "customer_message", "reply", "human_label"]
