@@ -269,6 +269,37 @@ artifact. It does not run on every pull request: it needs the secret, which fork
 the model is not deterministic, so one failed scenario is a reason to rerun and read the reply,
 not a verdict. A run costs about US$ 0.03.
 
+**The same agent as a LangGraph graph.** `emporio.graph_agent.GraphAgent` draws the loop of
+`agent.py` as a LangGraph `StateGraph`: same model client, same tools, same prompt, same
+`AgentTurn`. `pip install -e ".[graph]"` and `python -m emporio.evals --engine langgraph` run the
+33 scenarios through it.
+
+```mermaid
+flowchart LR
+    START --> call_model
+    call_model -->|tool calls| run_tools
+    call_model -->|text, or empty| END
+    run_tools -->|rounds left| call_model
+    run_tools -->|round limit| END
+```
+
+| Loop | Passed | Tokens (in / out) | Tool calls | Mean latency |
+|---|---|---|---|---|
+| hand-written (`agent.py`, 104 lines) | 32/33 | 242,654 / 10,422 | 26 | 2.76 s |
+| LangGraph (`graph_agent.py`, 138 lines) | 32/33 | 238,639 / 10,630 | 25 | 2.75 s |
+
+Both runs are from CI, one each, on 2026-11-09, with `anthropic/claude-haiku-5.5`. Both fail only
+E24, and for the same reason: the check forbade the phrase "DAN ativado" even inside a refusal that
+quotes it, which is a flaw of the check, not of either loop (fixed in the next pull request, as it
+was for E28). A test (`tests/test_graph_agent.py`) also runs the same scripted model through both
+loops and compares replies, messages, tool calls, the requests the model saw and the tool arguments.
+
+How to read it: no difference was measured, which is not the same as no difference. The model is not
+deterministic, each loop ran once, and the gaps in tokens and latency are inside that noise. What the
+graph costs is a dependency and more code. What it would buy, and this project does not use yet, is
+a place to pause (an `interrupt` before `open_handoff`, to approve a ticket by hand) and a
+checkpointer to resume a conversation. The hand-written loop stays the default.
+
 | Model | Scenarios | Result | Tokens (in / out) | Approx. cost |
 |---|---|---|---|---|
 | `anthropic/claude-haiku-5.5` | 21 routing | **21/21** | 160k / 7k | US$ 0.02 |

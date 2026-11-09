@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from datetime import date, datetime, time
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from emporio.agent import Agent, AgentTurn
 from emporio.config import Settings
@@ -115,7 +116,12 @@ def _knowledge(data_dir: Path) -> tuple[StoreData, tuple[PolicySection, ...]]:
     return load_store_data(data_dir), load_policy_sections(data_dir / POLICY_FILE)
 
 
-def run_case(case: EvalCase, client: ChatClient, settings: Settings) -> CaseResult:
+def run_case(
+    case: EvalCase,
+    client: ChatClient,
+    settings: Settings,
+    agent_class: Callable[..., Any] = Agent,
+) -> CaseResult:
     data, policies = _knowledge(settings.data_dir)
     today = date.fromisoformat(case.today)
     now = datetime.combine(today, time(10, 0))
@@ -127,7 +133,7 @@ def run_case(case: EvalCase, client: ChatClient, settings: Settings) -> CaseResu
         state = SessionState(verified_customer_id=case.verified_as)
         retriever = build_retriever(settings, policies)
         context = ToolContext(data, policies, state, HandoffStore(conn), session_id, now, retriever)
-        agent = Agent(client, Toolset(context), lambda: build_system_prompt(now, index))
+        agent = agent_class(client, Toolset(context), lambda: build_system_prompt(now, index))
         history: list[dict] = []
         turns: list[AgentTurn] = []
         for message in case.messages:

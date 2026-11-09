@@ -11,6 +11,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from emporio.agent import Agent
 from emporio.config import load_settings
 from emporio.evals.cases import CASES
 from emporio.evals.runner import gate, run_case, with_model
@@ -24,6 +25,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--case", action="append", metavar="ID", help="run only this case (repeatable)"
     )
     parser.add_argument("--tag", help="run only the cases with this tag")
+    parser.add_argument(
+        "--engine",
+        choices=("loop", "langgraph"),
+        default="loop",
+        help="the agent loop to evaluate: the hand-written one or the LangGraph graph",
+    )
     parser.add_argument("--report", metavar="FILE", help="write the full JSON report here")
     parser.add_argument(
         "--baseline",
@@ -46,6 +53,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(str(exc), file=sys.stderr)
         return 1
 
+    agent_class = Agent
+    if args.engine == "langgraph":
+        from emporio.graph_agent import GraphAgent  # optional dependency: pip install ".[graph]"
+
+        agent_class = GraphAgent
+
     cases = [
         c
         for c in CASES
@@ -53,7 +66,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     ]
     results = []
     for case in cases:
-        result = run_case(case, client, settings)
+        result = run_case(case, client, settings, agent_class)
         results.append(result)
         status = "PASS" if result.passed else "FAIL"
         print(f"{status} {case.id} tools={result.tool_names}")
@@ -62,13 +75,17 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     passed = sum(r.passed for r in results)
     calls = sum(len(r.tool_names) for r in results)
-    print(f"\n{passed}/{len(results)} passed, {calls} tool calls, model {settings.llm_model}")
+    print(
+        f"\n{passed}/{len(results)} passed, {calls} tool calls, model {settings.llm_model}, "
+        f"engine {args.engine}"
+    )
     print(f"tokens: {client.usage['prompt_tokens']} in, {client.usage['completion_tokens']} out")
     mean_latency = sum(r.latency_ms for r in results) / len(results) if results else 0
     print(f"mean latency per case: {mean_latency:.0f} ms")
 
     report = {
         "model": settings.llm_model,
+        "engine": args.engine,
         "date": date.today().isoformat(),
         "passed": passed,
         "total": len(results),

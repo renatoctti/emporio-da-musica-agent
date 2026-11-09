@@ -15,6 +15,10 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
+    "langgraph>=1.0",
+]
+graph = [
+    "langgraph>=1.0",
 ]
 
 [project.scripts]
